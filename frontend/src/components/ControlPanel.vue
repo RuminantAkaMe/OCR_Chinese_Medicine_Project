@@ -1,9 +1,9 @@
 <template>
   <v-card class="pa-4" elevation="3">
-    <v-card-title>⚙️ Optionen</v-card-title>
+    <v-card-title>⚙️ Options</v-card-title>
     <v-card-text>
       <v-btn color="error" @click="reset" :disabled="!store.processedFilename">
-        Zurücksetzen
+        Reset
       </v-btn>
     </v-card-text>
   </v-card>
@@ -13,15 +13,18 @@
 /**
  * ⚙️ ControlPanel.vue
  *
- * Zeigt den Reset-Button, um die Bearbeitung zurückzusetzen.
- * Ruft das Backend (/api/reset) auf und zeigt das Originalbild wieder an.
+ * Displays the reset button to revert the image processing.
+ * Calls the backend (/api/reset) and shows the original image again.
  *
- * Zustand:
- * - nutzt `store.processedFilename`
- * - ruft `store.showSnackbar()` bei Erfolg
+ * State:
+ * - uses `store.processedFilename`
+ * - calls `store.showSnackbar()` on success
  */
 
 import { useUploadStore } from '@/stores/uploadStore'
+import { defineEmits } from 'vue'
+
+const emit = defineEmits(['reset-done'])
 
 const store = useUploadStore()
 
@@ -34,10 +37,11 @@ const reset = async () => {
 
   if (data.filename) {
     store.setProcessedFilename(data.filename)
-    store.showSnackbar('Zurückgesetzt – Original wiederhergestellt')
+    store.showSnackbar('Reset – Original restored')
+    emit('reset-done')
   } else {
     store.setProcessedFilename(null)
-    store.showSnackbar('Kein Originalbild vorhanden')
+    store.showSnackbar('No original image avaiable')
   }
 }
 </script>

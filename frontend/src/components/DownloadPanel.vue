@@ -1,9 +1,9 @@
 <template>
   <v-card class="pa-4" elevation="3">
-    <v-card-title>📥 Ergebnis herunterladen</v-card-title>
+    <v-card-title>📥 Download Result</v-card-title>
     <v-card-text>
       <v-btn :href="downloadUrl" download :disabled="!store.processedFilename">
-        Herunterladen
+        Download
       </v-btn>
     </v-card-text>
   </v-card>
@@ -13,16 +13,17 @@
 /**
  * 📥 DownloadPanel.vue
  *
- * Zeigt einen Button zum Herunterladen der aktuell bearbeiteten Datei.
- * Verwendet den `processedFilename` aus dem UploadStore, um den Download-Link zu generieren.
+ * Displays a button to download the currently processed file.
+ * Uses `processedFilename` from the UploadStore to generate the download link.
  *
- * Voraussetzungen:
- * - `store.processedFilename` muss gesetzt sein (z. B. nach Upload oder Operation)
+ * Requirements:
+ * - `store.processedFilename` must be set (e.g., after an upload or an operation)
  *
- * Anzeige:
- * - Button ist deaktiviert, wenn keine Datei verfügbar ist
- * - Nutzt `:href="downloadUrl"` mit /api/download/<filename>
+ * Display:
+ * - Button is disabled if no file is available
+ * - Uses `:href="downloadUrl"` with /api/download/<filename>
  */
+
 
 import { computed } from 'vue'
 import { useUploadStore } from '@/stores/uploadStore'

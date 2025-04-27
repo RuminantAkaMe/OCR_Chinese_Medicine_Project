@@ -11,7 +11,7 @@
           <v-tab to="/about">About</v-tab>
         </v-tabs>
 
-        <!-- Seiteninhalt -->
+        <!-- Page Content -->
         <router-view />
       </v-container>
     </v-main>

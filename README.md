@@ -1,39 +1,44 @@
-# 🖼️ Bildbearbeitungs-Webapp mit Vue & FastAPI
+# 🖼️ OCR Processing Webapp with Vue & FastAPI
 
-Ein moderner Webservice zum Hochladen, Bearbeiten und Herunterladen von Bildern.  
-Das Projekt nutzt ein Vuetify-Frontend mit Vue 3 & Pinia und ein FastAPI-Backend mit Pillow zur Bildverarbeitung.
+A modern web service for uploading, processing, and downloading handwritten Chinese character images.  
+The project uses a Vuetify frontend with Vue 3 & Pinia, and a FastAPI backend powered by Pillow for image handling.
 
 ---
 
 ## 🚀 Features
 
-- 📤 Bild-Upload im Frontend
-- 🧠 Bildverarbeitung im Backend (z. B. drehen, verkleinern, Graustufen)
-- 📥 Ergebnis sofort im Browser anzeigen & herunterladen
-- 🔄 Operationen können nacheinander angewendet werden
-- 🧹 Zurücksetzen-Funktion (Reset auf Original)
-- 🖼 Live-Vorschau des bearbeiteten Bildes
-- 🔔 Snackbar-Feedback bei allen Aktionen
+- 📤 Upload images via the frontend
+- ✨ Step-by-step image processing pipeline:
+  - Preprocessing
+  - Character Detection
+  - Character Segmentation
+  - Character Recognition (OCR)
+  - PDF Creation
+- 📥 Live preview and instant download of processed files
+- 🔄 Reset functionality to restore the original file
+- 🖼 Real-time image preview during processing
+- 🔔 Snackbar feedback after every action
 
 ---
 
-## 🛠️ Technologien
+## 🛠️ Technologies
 
-- Frontend Vue 3, TypeScript, Pinia, Vuetify, Vite
-- Backend FastAPI, Python, Pillow (PIL)
-- Weitere Tools Git, Node.js, pip, virtualenv
+- Frontend: Vue 3, TypeScript, Pinia, Vuetify, Vite
+- Backend: FastAPI, Python, Pillow (PIL)
+- Other Tools: Git, Node.js, pip, virtualenv
 
 ---
 
-## 📂 Projektstruktur
+## 📂 Project Structure
 
 ```plaintext
-Template_Project
-├── frontend              # Vue + Vuetify App
-│   └── src               # Komponenten, Views, Store
-├── backend               # FastAPI Backend
+OCR_Chinese_Medicine_Project
+├── frontend              # Vue + Vuetify application
+│   └── src               # Components, Views, Store
+├── backend               # FastAPI backend
 │   ├── app
-│   │   ├── main.py        # API-Endpunkte
-│   │   └── processing.py  # Bildbearbeitungslogik
-│   └── uploaded_files    # Temporär gespeicherte Dateien (wird ignoriert)
-└── README.md              # Dieses Dokument
+│   │   ├── main.py        # API routes (upload, processing, reset, download)
+│   │   ├── operations/    # Separate Python files for each processing step
+│   └── uploaded_files     # Temporary storage for uploaded/processed files
+└── README.md              # This document
+

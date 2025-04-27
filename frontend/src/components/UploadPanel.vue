@@ -1,9 +1,9 @@
 <template>
   <v-card class="pa-4" elevation="3">
-    <v-card-title>📤 Datei hochladen</v-card-title>
+    <v-card-title>📤 Upload file</v-card-title>
     <v-card-text>
       <v-file-input
-        label="Datei auswählen"
+        label="Select file"
         v-model="selectedFile"
         accept="image/*"
         outlined
@@ -13,9 +13,9 @@
       <v-btn class="mt-3" :disabled="!selectedFile || loading" @click="upload">
         <template v-if="loading">
           <v-progress-circular indeterminate color="white" size="16" class="me-2" />
-          Lädt...
+          Loading...
         </template>
-        <template v-else> Hochladen </template>
+        <template v-else> Upload </template>
       </v-btn>
     </v-card-text>
   </v-card>
@@ -25,17 +25,20 @@
 /**
  * 📤 UploadPanel.vue
  *
- * Zeigt ein File-Input-Feld für den Upload von Bildern.
- * Sendet die Datei an das Backend (/api/upload).
- * Zeigt nach erfolgreichem Upload ein Snackbar-Feedback und aktiviert die Vorschau.
+ * Displays a file input field for uploading images.
+ * Sends the file to the backend (/api/upload).
+ * Shows a snackbar notification upon successful upload and activates the preview.
  *
- * Props: keine
- * Zustand: verwendet `useUploadStore` (selectedFile, processedFilename)
- * Abhängigkeiten: Snackbar, FastAPI-Endpoint
+ * Props: none
+ * State: uses `useUploadStore` (selectedFile, processedFilename)
+ * Dependencies: Snackbar, FastAPI endpoint
  */
 
 import { ref } from 'vue'
 import { useUploadStore } from '@/stores/uploadStore'
+import { defineEmits } from 'vue'
+
+const emit = defineEmits(['upload-done'])
 
 const store = useUploadStore()
 const selectedFile = ref<File | null>(null)
@@ -60,9 +63,10 @@ const upload = async () => {
   if (data.filename) {
     store.setFile(selectedFile.value)
     store.setProcessedFilename(data.filename)
-    store.showSnackbar('✅ Datei erfolgreich hochgeladen')
+    store.showSnackbar('✅ File uploaded successfully')
+    emit('upload-done')
   } else {
-    store.showSnackbar('❌ Upload fehlgeschlagen')
+    store.showSnackbar('❌ Upload failed')
   }
 }
 </script>

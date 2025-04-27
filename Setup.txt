@@ -1,42 +1,37 @@
-⚙️ Setup-Anleitung
+⚙️ Setup-Instructions (In a git bash)
 
-📦 Voraussetzungen
+📦 Requirements
 --------------------------------------------
 Node.js + npm
 Python 3.10+
 Git
 --------------------------------------------
 
-🔧 Backend einrichten
+🖼 start frontend
 --------------------------------------------
-bash
-Kopieren
-Bearbeiten
-cd backend
-python -m venv venv
-venv\Scripts\activate          # Windows
-# oder: source venv/bin/activate  # macOS/Linux
-
-pip install -r requirements.txt
-uvicorn app.main:app --reload
---------------------------------------------
-
-🖼 Frontend starten
---------------------------------------------
-bash
-Kopieren
-Bearbeiten
 cd frontend
 npm install
 npm run dev
 --------------------------------------------
 
-🔐 .gitignore-Hinweis
-Die Datei .gitignore sorgt dafür, dass temporäre Dateien nicht mit ins Git gelangen:
+🔧 Setup backend
+--------------------------------------------
+cd backend
+python -m venv venv
+venv/Scripts/activate          # Windows
+# or: source venv/bin/activate  # macOS/Linux
+
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+--------------------------------------------
+
+
+
+🔐 .gitignore advice
+.gitignore should make sure that these folders arent tracked:
 --------------------------------------------
 gitignore
-Kopieren
-Bearbeiten
+
 venv/
 node_modules/
 dist/

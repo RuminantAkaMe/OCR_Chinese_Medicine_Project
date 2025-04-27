@@ -1,15 +1,15 @@
 <template>
   <v-card class="pa-4" elevation="3">
-    <v-card-title>🖼 Vorschau</v-card-title>
+    <v-card-title>🖼 Preview</v-card-title>
     <v-card-text>
       <div v-if="imageUrl">
         <img
           :src="imageUrl"
-          alt="Vorschau"
+          alt="Preview"
           style="max-width: 100%; max-height: 400px; border: 1px solid #ccc"
         />
       </div>
-      <div v-else class="text-grey">Kein Bild ausgewählt oder verarbeitet.</div>
+      <div v-else class="text-grey">No image avaiable.</div>
     </v-card-text>
   </v-card>
 </template>
@@ -18,15 +18,15 @@
 /**
  * 🖼 PreviewPanel.vue
  *
- * Zeigt eine Live-Vorschau des aktuell bearbeiteten Bildes.
- * Nutzt `processedFilename` aus dem UploadStore, um das Bild über `/api/download/<filename>` anzuzeigen.
+ * Displays a live preview of the currently processed image.
+ * Uses `processedFilename` from the UploadStore to load the image via `/api/download/<filename>`.
  *
- * Anzeige:
- * - Kein Bild: Text-Hinweis
- * - Bild: `<img>`-Element mit festgelegter max. Größe
+ * Display:
+ * - No image: text hint
+ * - Image: `<img>` element with a fixed maximum size
  *
- * Reaktiv:
- * - Wird automatisch aktualisiert, wenn `processedFilename` sich ändert
+ * Reactive:
+ * - Automatically updates when `processedFilename` changes
  */
 
 import { computed } from 'vue'

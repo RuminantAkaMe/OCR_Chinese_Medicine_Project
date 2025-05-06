@@ -1,8 +1,8 @@
 <template>
   <v-card class="pa-4" elevation="3">
-    <v-card-title>5. PDF Creation</v-card-title>
+    <v-card-title>6. PDF Creation</v-card-title>
     <v-alert v-if="disabled" type="warning" dense class="pa-1 text-caption">
-      Please complete Character Recognition first.
+      Please complete Word Recognition first.
     </v-alert>
 
 

@@ -25,6 +25,7 @@ from app.operations import preprocessing
 from app.operations import character_detection 
 from app.operations import character_segmentation 
 from app.operations import character_recognition
+from app.operations import word_recognition
 from app.operations import pdf_creation
 import os
 import shutil
@@ -157,7 +158,7 @@ async def detect_characters():
     }
 
 # =========================
-# ✂️ Character Segmentation step
+# ✂️ Character Segmentation/Isolation step
 # =========================
 @app.post("/api/segment")
 async def segment_characters():
@@ -203,6 +204,34 @@ async def recognize_characters():
 
     filename = os.path.basename(input_path)
     output_filename = f"character_recognition_{filename}"
+    output_path = os.path.join(UPLOAD_DIR, output_filename)
+    processed_image.save(output_path)
+
+    processed_file_path = output_path
+
+    return {
+        "filename": os.path.basename(processed_file_path)
+    }
+
+# =========================
+# 🧠 Word Recognition (LLM) step
+# =========================
+@app.post("/api/recognize_words")
+async def recognize_words():
+    global original_file_path, processed_file_path
+
+    if original_file_path is None or not os.path.exists(original_file_path):
+        return {"error": "No file uploaded."}
+
+    input_path = processed_file_path or original_file_path
+
+    from PIL import Image
+    image = Image.open(input_path)
+
+    processed_image = word_recognition.run(image)
+
+    filename = os.path.basename(input_path)
+    output_filename = f"word_recognition_{filename}"
     output_path = os.path.join(UPLOAD_DIR, output_filename)
     processed_image.save(output_path)
 

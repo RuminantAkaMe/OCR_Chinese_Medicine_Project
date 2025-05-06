@@ -8,7 +8,7 @@
         <v-card class="pa-4" elevation="3">
           <v-card-title class="text-h6 mb-2">📋 Processing Steps</v-card-title>
 
-          <v-row dense>
+          <v-row dense style="max-height: 60vh; overflow-y: auto;">
             <v-col cols="12">
               <PreprocessingPanel :disabled="!isOperationEnabled(0)" @operation-done="markOperationDone(0)" />
             </v-col>
@@ -22,7 +22,10 @@
               <CharacterRecognitionPanel :disabled="!isOperationEnabled(3)" @operation-done="markOperationDone(3)" />
             </v-col>
             <v-col cols="12">
-              <PdfCreationPanel :disabled="!isOperationEnabled(4)" />
+              <WordRecognitionPanel :disabled="!isOperationEnabled(4)" @operation-done="markOperationDone(4)" />
+            </v-col>
+            <v-col cols="12">
+              <PdfCreationPanel :disabled="!isOperationEnabled(5)" />
             </v-col>
           </v-row>
         </v-card>
@@ -56,6 +59,7 @@ import CharacterRecognitionPanel from '@/components/CharacterRecognitionPanel.vu
 import PdfCreationPanel from '@/components/PdfCreationPanel.vue'
 import PreviewPanel from '@/components/PreviewPanel.vue'
 import ControlPanel from '@/components/ControlPanel.vue'
+import WordRecognitionPanel from '@/components/WordRecognitionPanel.vue'
 
 /**
  * 🏠 HomeView.vue

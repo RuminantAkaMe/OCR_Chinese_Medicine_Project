@@ -218,27 +218,11 @@ async def recognize_characters():
 # =========================
 @app.post("/api/recognize_words")
 async def recognize_words():
-    global original_file_path, processed_file_path
 
-    if original_file_path is None or not os.path.exists(original_file_path):
-        return {"error": "No file uploaded."}
-
-    input_path = processed_file_path or original_file_path
-
-    from PIL import Image
-    image = Image.open(input_path)
-
-    processed_image = word_recognition.run(image)
-
-    filename = os.path.basename(input_path)
-    output_filename = f"word_recognition_{filename}"
-    output_path = os.path.join(UPLOAD_DIR, output_filename)
-    processed_image.save(output_path)
-
-    processed_file_path = output_path
+    output_path = word_recognition.run()
 
     return {
-        "filename": os.path.basename(processed_file_path)
+        "filename": os.path.basename(output_path)
     }
 
 # =========================

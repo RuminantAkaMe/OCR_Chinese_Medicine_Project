@@ -1,46 +1,37 @@
 # word_recognition.py
 
-import json
 from pathlib import Path
-from app.operations.word_recognition_src.image_to_feature_vector import image_to_feature_vector
+import json
 from app.operations.word_recognition_src.model.llm_prediction import query_model
+from app.operations.word_recognition_src.json_to_img import render_raw_json_to_image
 
 def run() -> str:
     """
-    Executes LLM-based word recognition.
-    Constructs a structured prompt using OCR and image embeddings.
-    Returns the output path of the JSON result.
-    """
+    Executes the word recognition pipeline using SmolVLM2.
 
+    This function loads a character sequence (with image references and OCR text),
+    passes it to the large language model for inference, and stores the raw result.
+
+    Returns:
+        str: Path to the JSON file containing the model's response.
+    """
     BASE_DIR = Path(__file__).resolve().parent
     DATA_DIR = BASE_DIR / "word_recognition_src" / "data"
-
     sequence_path = DATA_DIR / "sequence.json"
     output_path = DATA_DIR / "output.json"
 
-    # Load input sequence (OCR + image paths)
-    with sequence_path.open("r", encoding="utf-8") as f:
-        sequence = json.load(f)
+    # Perform inference on the complete input sequence using the language model
+    result = query_model(sequence_path)
 
-    # Construct prompt with OCR and truncated image embeddings
-    lines = []
-    for token in sequence:
-        ocr = token["ocr"]
-        img_path = (sequence_path.parent / token["img"]).resolve()  # Resolve full image path
-        emb = image_to_feature_vector(img_path)                     # Convert image to vector
-        emb_str = ",".join(f"{v:.4f}" for v in emb[:16])            # Use first 16 dims only
-        lines.append(f"{token['id']}: {ocr} <IMG:{emb_str}>")
-
-    prompt = "\n".join(lines)
-
-    # Run the LLM prediction on the constructed prompt
-    result = query_model(prompt)
-
-    # Save the result to output.json
+    # Save the raw model output to a file
     with output_path.open("w", encoding="utf-8") as f:
-        f.write(result)
+        json.dump({"response": result}, f, ensure_ascii=False, indent=2)
 
-    return str(output_path)
+    return render_raw_json_to_image(str(output_path))
+
+
+
+
 
 
 

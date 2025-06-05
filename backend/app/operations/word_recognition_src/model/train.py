@@ -1,38 +1,43 @@
-# train.py
 from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments, Trainer, DataCollatorForLanguageModeling
-from datasets import load_dataset, Dataset
+from datasets import Dataset
 from peft import get_peft_model, LoraConfig, TaskType
 from pathlib import Path
 from transformers import BitsAndBytesConfig
 import json
+import torch
 
+# Modellpfad von Hugging Face
+MODEL_ID = "HuggingFaceTB/SmolVLM2-2.2B-Instruct"
+
+# BitsAndBytes: Quantisierung aktivieren
 bnb_config = BitsAndBytesConfig(
-    #load_in_4bit=True,
     bnb_4bit_use_double_quant=True,
     bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype="float16",
+    bnb_4bit_compute_dtype=torch.float16
 )
 
-MODEL_PATH = "E:/Software-Projekte/Mistral/Mistral-7B-v0.1"
-
+# Daten laden aus .jsonl
 def load_data(path: Path) -> Dataset:
     with open(path, "r", encoding="utf-8") as f:
         data = [json.loads(line) for line in f]
     return Dataset.from_list(data)
 
+# Prompt-Format wie bei Inferenz
 def tokenize(example, tokenizer):
-    input_ids = tokenizer(example["input"], truncation=True, padding="max_length", max_length=512)["input_ids"]
-    label_ids = tokenizer(example["output"], truncation=True, padding="max_length", max_length=512)["input_ids"]
-    return {"input_ids": input_ids, "labels": label_ids}
+    prompt = f"<|user|>\n<|image|>\n{example['input']}\n<|end|>\n<|assistant|>\n{example['output']}"
+    tokens = tokenizer(prompt, truncation=True, padding="max_length", max_length=512)
+    tokens["labels"] = tokens["input_ids"].copy()
+    return tokens
 
 def main():
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, use_fast=False)
+    # Tokenizer und Modell laden
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
     model = AutoModelForCausalLM.from_pretrained(
-        MODEL_PATH,
+        MODEL_ID,
         device_map="auto",
+        torch_dtype=torch.float16,
         quantization_config=bnb_config
     )
-
 
     # LoRA Konfiguration
     peft_config = LoraConfig(
@@ -44,12 +49,12 @@ def main():
     )
     model = get_peft_model(model, peft_config)
 
-    # Daten laden und vorbereiten
+    # Dataset vorbereiten
     dataset_path = Path(__file__).parent.parent / "word_recognition_src" / "data" / "train.jsonl"
     dataset = load_data(dataset_path)
     dataset = dataset.map(lambda x: tokenize(x, tokenizer), remove_columns=["input", "output"])
 
-    # Trainingsparameter
+    # Trainingsargumente
     args = TrainingArguments(
         output_dir="./checkpoints",
         per_device_train_batch_size=1,

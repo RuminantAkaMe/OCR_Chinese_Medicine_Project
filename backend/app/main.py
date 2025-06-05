@@ -218,12 +218,31 @@ async def recognize_characters():
 # =========================
 @app.post("/api/recognize_words")
 async def recognize_words():
+    global original_file_path, processed_file_path
 
-    output_path = word_recognition.run()
+    if original_file_path is None or not os.path.exists(original_file_path):
+        return {"error": "No file uploaded."}
 
+    # Run the word recognition logic (generates and returns image path)
+    generated_image_path = word_recognition.run()
+
+    # Use current input filename to construct consistent output filename
+    input_filename = os.path.basename(processed_file_path or original_file_path)
+    output_filename = f"word_recognition_{input_filename}"
+    output_path = os.path.join(UPLOAD_DIR, output_filename)
+
+    # Copy the image result into the UPLOAD_DIR
+    from shutil import copyfile
+    copyfile(generated_image_path, output_path)
+
+    # Update processed_file_path so it can be downloaded or passed to next steps
+    processed_file_path = output_path
+
+    print("✅ Output image path:", output_path)
     return {
         "filename": os.path.basename(output_path)
     }
+
 
 # =========================
 # 📄 Create searchable PDF

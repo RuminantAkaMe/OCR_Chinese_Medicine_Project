@@ -1,5 +1,6 @@
 import subprocess
 import pkg_resources
+import sys
 
 def installRequirements(requirements_file='./requirements.txt'):
     try:
@@ -36,7 +37,18 @@ def installRequirements(requirements_file='./requirements.txt'):
 
     if to_install:
         try:
-            subprocess.check_call(['pip', 'install'] + to_install)
+            # Use --user flag if not running as admin/root
+            user_flag = []
+            if not hasattr(sys, "real_prefix") and not (hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix):
+                # Not in a virtualenv, check for admin rights
+                try:
+                    import ctypes
+                    is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
+                except Exception:
+                    is_admin = False
+                if not is_admin:
+                    user_flag = ['--user']
+            subprocess.check_call([sys.executable, '-m', 'pip', 'install'] + user_flag + to_install)
             print(f"Installed: {', '.join(to_install)}")
         except subprocess.CalledProcessError as e:
             print(f"Failed to install packages: {e}")

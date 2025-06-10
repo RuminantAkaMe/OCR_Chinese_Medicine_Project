@@ -80,10 +80,8 @@ class Utilities:
             save_img_path = config.get("save_img_path", "")
             save_json_path = config.get("save_json_path", "")
             model_name = config.get("model_name", "")
-            
-            if not input_dir or not save_img_path or not save_json_path:
-                raise ValueError("Missing required paths in configuration.")
-            return input_dir, save_img_path, save_json_path, model_name
+            excel_path = config.get("excel_path", "")
+            return input_dir, save_img_path, save_json_path, model_name, excel_path
         except Exception as e:
             print(f"Error extracting paths from config: {e}")
-            return "", "", "", ""
+            return "", "", "", "", ""

@@ -1,6 +1,7 @@
 {
-  "input_dir": "./input/",
-  "save_img_path": "./output/",
-  "save_json_path": "./output/res.json",
-  "model_name": "PP-OCRv5_server_rec"
+  "input_dir": "C:\\Users\\karth\\Downloads\\page10\\page10",
+  "save_img_path": "C:\\Users\\karth\\Downloads\\page10identified",
+  "save_json_path": "./output",
+  "model_name": "PP-OCRv5_server_rec",
+  "excel_path": "./excel_output"
 }

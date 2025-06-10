@@ -1,0 +1,6 @@
+{
+  "input_dir": "./input/",
+  "save_img_path": "./output/",
+  "save_json_path": "./output/res.json",
+  "model_name": "PP-OCRv5_server_rec"
+}

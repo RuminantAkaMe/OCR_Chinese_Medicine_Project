@@ -104,7 +104,7 @@ def predict(model_path, images_folder, results_folder, coords_folder ):
 
         save_path = os.path.join(results_folder, img_file)
         cv2.imwrite(save_path, img)
-        coords_path = os.path.join(coords_folder, img_file.replace('.jpg', '.json'))Add commentMore actions
+        coords_path = os.path.join(coords_folder, img_file.replace('.jpg', '.json'))
         with open(coords_path, 'w') as f:
             json.dump(boxes_xyxy.tolist(), f)
 

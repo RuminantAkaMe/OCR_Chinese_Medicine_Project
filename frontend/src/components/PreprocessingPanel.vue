@@ -1,6 +1,7 @@
 <template>
   <v-card class="pa-4" elevation="3">
-    <v-card-title>1. Preprocessing</v-card-title>
+    <v-card-title>1. Preprocessing
+    <span style="color: red; font-weight: normal;">(deprecated)</span></v-card-title>
     <v-alert v-if="!store.selectedFile" type="warning" dense class="pa-1 text-caption">
       Please upload a file.
     </v-alert>

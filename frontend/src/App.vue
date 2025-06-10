@@ -12,6 +12,7 @@
         </v-tabs>
 
         <!-- Page Content -->
+        <span style="color: red; font-weight: normal;">Only for representative purpose, result are pre-computed.</span>
         <router-view />
       </v-container>
     </v-main>

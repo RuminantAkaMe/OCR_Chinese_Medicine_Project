@@ -1,5 +1,7 @@
-from PIL import Image, ImageOps
+from PIL import Image
+import os
 
-def run(image: Image.Image) -> Image.Image:
-    # Dummy: invert the image colors to simulate "recognition"
-    return ImageOps.invert(image)
+def run(_: Image.Image) -> Image.Image:
+    base_path = os.path.dirname(__file__)
+    image_path = os.path.join(base_path, "character_recognition_src", "output", "output.png")
+    return Image.open(image_path)

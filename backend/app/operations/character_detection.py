@@ -1,7 +1,8 @@
-from PIL import Image, ImageDraw
+from PIL import Image
+import os
 
-def run(image: Image.Image) -> Image.Image:
-    # Dummy: draw a red rectangle (simulate a detection)
-    draw = ImageDraw.Draw(image)
-    draw.rectangle([50, 50, 150, 150], outline="red", width=5)
-    return image
+def run(_: Image.Image) -> Image.Image:
+    base_path = os.path.dirname(__file__)
+    image_path = os.path.join(base_path, "character_detection_src", "output", "output.png")
+    return Image.open(image_path)
+

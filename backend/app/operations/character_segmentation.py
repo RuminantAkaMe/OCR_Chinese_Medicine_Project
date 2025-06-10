@@ -1,7 +1,7 @@
-from PIL import Image, ImageEnhance
+from PIL import Image
+import os
 
-def run(image: Image.Image) -> Image.Image:
-    # Dummy: Increase contrast slightly to simulate "segmentation"
-    enhancer = ImageEnhance.Contrast(image)
-    image = enhancer.enhance(1.5)
-    return image
+def run(_: Image.Image) -> Image.Image:
+    base_path = os.path.dirname(__file__)
+    image_path = os.path.join(base_path, "character_segmentation_src", "output", "output.png")
+    return Image.open(image_path)

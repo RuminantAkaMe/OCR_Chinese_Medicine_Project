@@ -1,7 +1,4 @@
-# predict.py
-
 import os
-import json
 import cv2
 import numpy as np
 from ultralytics import YOLO
@@ -28,6 +25,7 @@ def convert_pdf_to_images(pdf_path, output_folder):
 
     return image_paths
 
+#Removing Red circles from the pdfs
 def remove_red_circles(img):
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
@@ -46,6 +44,7 @@ def remove_red_circles(img):
     img_no_red = cv2.inpaint(img, red_mask, inpaintRadius=3, flags=cv2.INPAINT_TELEA)
     return img_no_red
 
+# Putting boxes in each vertical line with different color
 def group_boxes_into_vertical_lines(boxes, x_threshold=50):
     boxes = sorted(boxes, key=lambda b: b[0])
 
@@ -67,11 +66,10 @@ def group_boxes_into_vertical_lines(boxes, x_threshold=50):
 
     return lines
 
-def predict(model_path, images_folder, results_folder, coords_folder ):
+def predict(model_path, images_folder, results_folder):
     os.makedirs(results_folder, exist_ok=True)
-    os.makedirs(coords_folder, exist_ok=True)
     
-    model = YOLO(model_path)  # Can be yolo10n.pt
+    model = YOLO(model_path)  # YOLO Model
 
     image_files = [f for f in os.listdir(images_folder) if f.endswith('.jpg')]
 
@@ -105,19 +103,29 @@ def predict(model_path, images_folder, results_folder, coords_folder ):
         save_path = os.path.join(results_folder, img_file)
         cv2.imwrite(save_path, img)
 
-        coords_path = os.path.join(coords_folder, img_file.replace('.jpg', '.json'))
-        with open(coords_path, 'w') as f:
-            json.dump(boxes_xyxy.tolist(), f)
-
         print(f"[INFO] Saved detection result for {img_file} with vertical lines in {results_folder}")
 
-if __name__ == "__main__":
-    pdf_path = '1900.pdf'
-    temp_images_folder = 'temp_images'
-    results_folder = 'results_5'
-    trained_model_path = 'yolo10n.pt'  # Updated model path
+def run(pdf_path):
+    temp_images_folder = 'temp_images'  # Define temporary image folder
+    results_folder = 'results_7'
+    trained_model_path = 'yolov10n.pt'  # Updated model path
 
-    coords_folder = 'coords'
+    # Get sorted list of image filenames
+    result_images = sorted(
+        [f for f in os.listdir(results_folder) if f.lower().endswith('.jpg')]
+    )
 
-    image_paths = convert_pdf_to_images(pdf_path, temp_images_folder)
-    predict(trained_model_path, temp_images_folder, results_folder, coords_folder)
+    if len(result_images) >= 2:
+        second_image_path = os.path.join(results_folder, result_images[1])
+
+        # Read the image
+        img = cv2.imread(second_image_path)
+
+        if img is None:
+            print("[ERROR] Failed to load image.")
+            return None
+
+        return img
+    else:
+        print("[ERROR] Less than 2 images in results folder.")
+        return None

@@ -223,23 +223,26 @@ async def recognize_words():
     if original_file_path is None or not os.path.exists(original_file_path):
         return {"error": "No file uploaded."}
 
-    input_path = processed_file_path or original_file_path
+    # Run the word recognition logic (generates and returns image path)
+    generated_image_path = word_recognition.run()
 
-    from PIL import Image
-    image = Image.open(input_path)
-
-    processed_image = word_recognition.run(image)
-
-    filename = os.path.basename(input_path)
-    output_filename = f"word_recognition_{filename}"
+    # Use current input filename to construct consistent output filename
+    input_filename = os.path.basename(processed_file_path or original_file_path)
+    output_filename = f"word_recognition_{input_filename}"
     output_path = os.path.join(UPLOAD_DIR, output_filename)
-    processed_image.save(output_path)
 
+    # Copy the image result into the UPLOAD_DIR
+    from shutil import copyfile
+    copyfile(generated_image_path, output_path)
+
+    # Update processed_file_path so it can be downloaded or passed to next steps
     processed_file_path = output_path
 
+    print("✅ Output image path:", output_path)
     return {
-        "filename": os.path.basename(processed_file_path)
+        "filename": os.path.basename(output_path)
     }
+
 
 # =========================
 # 📄 Create searchable PDF

@@ -116,7 +116,7 @@ def run(pdf_path):
     trained_model_path = 'yolov10n.pt'  # Updated model path
     coords_folder = 'coords'
 
-    image_paths = convert_pdf_to_images(pdf_path, temp_images_folder)Add commentMore actions
+    image_paths = convert_pdf_to_images(pdf_path, temp_images_folder)
     predict(trained_model_path, temp_images_folder, results_folder, coords_folder)
 
     # Get sorted list of image filenames

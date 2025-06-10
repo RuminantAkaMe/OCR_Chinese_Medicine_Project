@@ -3,6 +3,8 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 from pdf2image import convert_from_path
+import json
+
 
 def convert_pdf_to_images(pdf_path, output_folder):
     # Clear existing files in output_folder
@@ -66,7 +68,7 @@ def group_boxes_into_vertical_lines(boxes, x_threshold=50):
 
     return lines
 
-def predict(model_path, images_folder, results_folder):
+def predict(model_path, images_folder, results_folder, coords_folder ):
     os.makedirs(results_folder, exist_ok=True)
     
     model = YOLO(model_path)  # YOLO Model
@@ -102,6 +104,9 @@ def predict(model_path, images_folder, results_folder):
 
         save_path = os.path.join(results_folder, img_file)
         cv2.imwrite(save_path, img)
+        coords_path = os.path.join(coords_folder, img_file.replace('.jpg', '.json'))Add commentMore actions
+        with open(coords_path, 'w') as f:
+            json.dump(boxes_xyxy.tolist(), f)
 
         print(f"[INFO] Saved detection result for {img_file} with vertical lines in {results_folder}")
 
@@ -109,6 +114,10 @@ def run(pdf_path):
     temp_images_folder = 'temp_images'  # Define temporary image folder
     results_folder = 'results_7'
     trained_model_path = 'yolov10n.pt'  # Updated model path
+    coords_folder = 'coords'
+
+    image_paths = convert_pdf_to_images(pdf_path, temp_images_folder)Add commentMore actions
+    predict(trained_model_path, temp_images_folder, results_folder, coords_folder)
 
     # Get sorted list of image filenames
     result_images = sorted(

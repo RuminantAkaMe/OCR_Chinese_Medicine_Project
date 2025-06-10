@@ -70,6 +70,7 @@ def group_boxes_into_vertical_lines(boxes, x_threshold=50):
 
 def predict(model_path, images_folder, results_folder, coords_folder ):
     os.makedirs(results_folder, exist_ok=True)
+    os.makedirs(coords_folder, exist_ok=True)
     
     model = YOLO(model_path)  # YOLO Model
 

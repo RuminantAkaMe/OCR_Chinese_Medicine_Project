@@ -5,9 +5,18 @@ from textRecognition import recognize_and_save
 
 
 class Utilities:
-    # Returns a list of image file paths from the given directory.
     @staticmethod
     def get_image_files(input_dir, image_extensions=(".jpg", ".jpeg", ".png", ".bmp", ".tiff")):
+        """
+        Returns a list of image file paths from the given directory.
+
+        Args:
+            input_dir (str): Directory where image files are stored.
+            image_extensions (tuple): Tuple of valid image file extensions.
+
+        Returns:
+            list: List of image file paths.
+        """
         try:
             return [
                 os.path.join(input_dir, f)
@@ -18,47 +27,61 @@ class Utilities:
             print(f"Error: The directory '{input_dir}' does not exist.")
             return []
         except Exception as e:
-            print(f"An unexpected error occurred while fetching image files: {e}")
+            print(f"Unexpected error while fetching image files: {e}")
             return []
 
     @staticmethod
-    def process_all_images(input_dir, save_img_path, save_json_path,model_name):
+    def process_all_images(input_dir, save_img_path, save_json_path, model_name):
+        """
+        Processes all images from the input directory with the specified OCR model.
+        Saves the per-image results and writes a summary JSON file.
+
+        Args:
+            input_dir (str): Directory with the input images.
+            save_img_path (str): Directory to save processed images/results.
+            save_json_path (str): Path to the summary JSON file.
+            model_name (str): Identifier for the OCR model.
+        """
         if not input_dir or not save_img_path or not save_json_path:
             print("Error: Input directory, save image path, or save JSON path is not set.")
             return
-        try:
-            image_files = Utilities.get_image_files(input_dir)
-            if not image_files:
-                print("No image files found. Exiting.")
-                return
 
-            all_results = []
+        image_files = Utilities.get_image_files(input_dir)
+        if not image_files:
+            print("No image files found. Exiting.")
+            return
 
-            for img_path in image_files:
-                try:
-                    result = recognize_and_save(
-                        image_path=img_path,
-                        save_img_path=save_img_path,
-                        model_name=model_name
-                    )
-                    all_results.append({
-                        "image": os.path.basename(img_path),
-                        "result": result
-                    })
-                except Exception as e:
-                    print(f"Error processing image '{img_path}': {e}")
-
+        all_results = []
+        for img_path in image_files:
             try:
-                with open(save_json_path, "w", encoding="utf-8") as f:
-                    json.dump(all_results, f, ensure_ascii=False, indent=2)
+                # The recognize_and_save function handles saving individual results.
+                result = recognize_and_save(
+                    image_path=img_path,
+                    save_img_path=save_img_path,
+                    model_name=model_name
+                )
+                all_results.append({
+                    "image": os.path.basename(img_path),
+                    "result": result
+                })
             except Exception as e:
-                print(f"Error saving results to JSON file '{save_json_path}': {e}")
+                print(f"Error processing image '{img_path}': {e}")
 
+        try:
+            with open(save_json_path, "w", encoding="utf-8") as f:
+                json.dump(all_results, f, ensure_ascii=False, indent=2)
+            print(f"Summary JSON saved to: {save_json_path}")
         except Exception as e:
-            print(f"An unexpected error occurred during processing: {e}")
+            print(f"Error saving results to JSON file '{save_json_path}': {e}")
 
     @staticmethod
     def load_config():
+        """
+        Load configuration from the 'config.json' file.
+
+        Returns:
+            dict: Configuration dictionary or empty dict on error.
+        """
         try:
             with open('config.json', 'r', encoding='utf-8') as f:
                 config = json.load(f)
@@ -70,11 +93,20 @@ class Utilities:
             print("Error: 'config.json' file is not a valid JSON.")
             return {}
         except Exception as e:
-            print(f"An unexpected error occurred while loading config: {e}")
+            print(f"Unexpected error while loading config: {e}")
             return {}
 
     @staticmethod
     def get_paths_from_config(config):
+        """
+        Extract required paths and model name from the configuration.
+
+        Args:
+            config (dict): Configuration dictionary.
+
+        Returns:
+            tuple: (input_dir, save_img_path, save_json_path, model_name, excel_path)
+        """
         try:
             input_dir = config.get("input_dir", "")
             save_img_path = config.get("save_img_path", "")

@@ -104,10 +104,10 @@ def predict(model_path, images_folder, results_folder, coords_folder ):
 
         save_path = os.path.join(results_folder, img_file)
         cv2.imwrite(save_path, img)
+
         coords_path = os.path.join(coords_folder, img_file.replace('.jpg', '.json'))
         with open(coords_path, 'w') as f:
             json.dump(boxes_xyxy.tolist(), f)
-
 
         print(f"[INFO] Saved detection result for {img_file} with vertical lines in {results_folder}")
 
@@ -116,6 +116,7 @@ if __name__ == "__main__":
     temp_images_folder = 'temp_images'
     results_folder = 'results_5'
     trained_model_path = 'yolo10n.pt'  # Updated model path
+
     coords_folder = 'coords'
 
     image_paths = convert_pdf_to_images(pdf_path, temp_images_folder)

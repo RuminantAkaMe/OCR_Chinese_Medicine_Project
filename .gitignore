@@ -3,6 +3,7 @@
 venv/
 __pycache__/
 uploaded_files/
+!uploaded_files/.keep
 
 # Frontend
 node_modules/

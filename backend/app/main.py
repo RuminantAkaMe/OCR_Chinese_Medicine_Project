@@ -121,6 +121,7 @@ async def preprocess_file():
     filename = os.path.basename(input_path)
     output_filename = f"preprocessing_{filename}"
     output_path = os.path.join(UPLOAD_DIR, output_filename)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     processed_image.save(output_path)
 
     processed_file_path = output_path
@@ -149,6 +150,7 @@ async def detect_characters():
     filename = os.path.basename(input_path)
     output_filename = f"character_detection_{filename}"
     output_path = os.path.join(UPLOAD_DIR, output_filename)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     processed_image.save(output_path)
 
     processed_file_path = output_path
@@ -177,6 +179,7 @@ async def segment_characters():
     filename = os.path.basename(input_path)
     output_filename = f"character_segmentation_{filename}"
     output_path = os.path.join(UPLOAD_DIR, output_filename)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     processed_image.save(output_path)
 
     processed_file_path = output_path
@@ -205,7 +208,9 @@ async def recognize_characters():
     filename = os.path.basename(input_path)
     output_filename = f"character_recognition_{filename}"
     output_path = os.path.join(UPLOAD_DIR, output_filename)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     processed_image.save(output_path)
+
 
     processed_file_path = output_path
 
@@ -233,6 +238,7 @@ async def recognize_words():
     filename = os.path.basename(input_path)
     output_filename = f"word_recognition_{filename}"
     output_path = os.path.join(UPLOAD_DIR, output_filename)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     processed_image.save(output_path)
 
     processed_file_path = output_path

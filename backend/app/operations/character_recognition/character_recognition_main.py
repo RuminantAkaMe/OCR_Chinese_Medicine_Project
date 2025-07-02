@@ -32,7 +32,7 @@ def convert_json_to_txt():
         print(f"Error during JSON to text conversion: {e}")
 
 
-def main():
+def character_recognition_main():
     """Main entry point of the program."""
     try:
         config = Utilities.load_config()
@@ -42,5 +42,3 @@ def main():
         print(f"An error occurred in the main program: {e}")
 
 
-if __name__ == "__main__":
-    main()

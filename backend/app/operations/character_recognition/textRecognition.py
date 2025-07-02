@@ -7,7 +7,7 @@ def ensure_directory(path: str) -> None:
 
 def initialize_model(model_name: str) -> TextRecognition:
     """Initialize and return the OCR model for the given model name."""
-    return TextRecognition(model_name=model_name)
+    return TextRecognition(model_name=model_name, model_dir="./PP-OCRv5_server_rec_infer")
 
 def predict_text(model: TextRecognition, image_path: str, batch_size: int = 1):
     """Run text recognition (prediction) on the image."""

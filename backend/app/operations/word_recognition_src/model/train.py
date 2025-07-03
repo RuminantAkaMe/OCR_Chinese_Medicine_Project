@@ -1,6 +1,8 @@
 # to train call in bash: $ python backend/app/operations/word_recognition_src/model/train.py
-# DONT FORGET to activate your python environment
+# DONT FORGET to activate your python environment: source backend/.venv310/Scripts/activate
 # image size must be divisable by 14
+
+# train.py
 
 from transformers import AutoModelForImageTextToText, AutoProcessor, TrainingArguments, Trainer
 from transformers import BitsAndBytesConfig
@@ -13,45 +15,85 @@ import json
 import numpy as np
 
 # === Model and processor configuration ===
+# Define the path to the pre-trained model you will be fine-tuning
 MODEL_PATH = "E:/Software-Projekte/SmolVLM/SmolVLM2-2.2B-Instruct"
 
+# Configure quantization for the model using Bits and Bytes (bnb) for efficient memory use
 bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_use_double_quant=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.float32
+    load_in_4bit=True, # Load model in 4-bit precision
+    bnb_4bit_use_double_quant=True, # Use double quantization for better precision
+    bnb_4bit_quant_type="nf4", # Specify quantization type (normalized float 4-bit)
+    bnb_4bit_compute_dtype=torch.float32  # Use 32-bit floating point for computation
 )
 
+# Configure LoRA (Low-Rank Adaptation) for efficient model fine-tuning
 peft_config = LoraConfig(
-    r=8,
-    lora_alpha=32,
-    lora_dropout=0.1,
-    bias="none",
-    task_type=TaskType.CAUSAL_LM,
-    target_modules=["q_proj", "v_proj"]
+    r=8, # Rank of the adaptation matrices
+    lora_alpha=32, # Scaling factor for LoRA updates
+    lora_dropout=0.1, # Dropout rate during fine-tuning to prevent overfitting
+    bias="none", # No bias in LoRA adaptation
+    task_type=TaskType.CAUSAL_LM, # The task type (causal language modeling)
+    target_modules=["q_proj", "v_proj"] # LoRA will be applied to these layers
 )
 
 # === Load dataset from JSONL ===
 def load_data(path: Path) -> Dataset:
+    """
+    Load data from a JSON Lines (JSONL) file and convert it into a Hugging Face Dataset.
+    
+    Args:
+        path (Path): The path to the JSONL file.
+        
+    Returns:
+        Dataset: A Hugging Face Dataset object containing the loaded data.
+    """
     with open(path, "r", encoding="utf-8") as f:
+        # Read each line in the file and parse the JSON data
         data = [json.loads(line) for line in f if line.strip()]
     return Dataset.from_list(data)
 
-# === Preprocess a single training example ===
+# === Preprocess sequence input with multiple images and OCR entries ===
 def preprocess(example, processor):
-    image_path = Path(__file__).parent.parent / example["img"]
-    image = Image.open(image_path).convert("RGB")
-    pixel_values = processor.image_processor(image, return_tensors="pt")["pixel_values"].squeeze(0)  # [3, H, W]
+    """
+    Preprocess an example for input to the model. This involves converting the images to tensors,
+    creating an OCR sequence, and formatting the input and output as required for training.
+    
+    Args:
+        example (dict): A single training example containing input and output data.
+        processor (AutoProcessor): A Hugging Face processor to handle tokenization and image processing.
+        
+    Returns:
+        dict: A dictionary containing preprocessed tensors ready for model input.
+    """
+    images = []
+    ocr_sequence = []
 
-    messages = [{
-        "role": "user",
-        "content": [
-            {"type": "text", "text": f"OCR: {example['ocr']}"},
-            {"type": "image", "image": image},
-            {"type": "text", "text": "What word do these chinese characters represent?"}
-        ]
-    }]
+    # Process each token in the input to load the corresponding image and OCR data
+    for token in example["input"]:
+        img_path = Path(__file__).parent.parent / token["img"]
+        image = Image.open(img_path).convert("RGB")
+        images.append(image)
 
+        # Build the OCR sequence string
+        char = token["ocr"]
+        conf = token.get("ocr_confidence", None)
+        ocr_sequence.append(f"{char}({conf:.2f})" if conf is not None else char)
+
+    ocr_prompt = " ".join(ocr_sequence)
+
+    # Prepare the message structure for the model
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": f"OCR results: {ocr_prompt}"},
+                *[{"type": "image", "image": img} for img in images],
+                {"type": "text", "text": "What words are formed by these characters? Reply with spans and candidate words in JSON format."}
+            ]
+        }
+    ]
+
+    # Apply the processor's chat template to format the messages for the model
     encoding = processor.apply_chat_template(
         messages,
         add_generation_prompt=True,
@@ -60,6 +102,7 @@ def preprocess(example, processor):
         return_tensors=None
     )
 
+    # Helper function to convert values to tensors
     def to_tensor(val):
         if isinstance(val, list):
             return torch.tensor(val, dtype=torch.long if all(isinstance(x, int) for x in val) else torch.float)
@@ -67,100 +110,127 @@ def preprocess(example, processor):
             return torch.tensor(val)
         elif isinstance(val, torch.Tensor):
             return val
-        elif isinstance(val, (float, np.floating)):
-            return torch.tensor([val], dtype=torch.float)
-        elif isinstance(val, (int, np.integer)):
-            return torch.tensor([val], dtype=torch.long)
+        elif isinstance(val, (float, int)):
+            return torch.tensor([val])
         else:
             raise TypeError(f"Cannot convert type {type(val)} to tensor")
 
+    # Convert the encoding output into tensors
     encoding = {k: to_tensor(v) for k, v in encoding.items()}
+    input_ids = encoding["input_ids"]
 
-    input_ids = encoding["input_ids"].squeeze()
+    # Prepare the output labels by encoding them
+    output_json = json.dumps(example["output"], ensure_ascii=False)
     output_ids = processor.tokenizer(
-        example["output"],
+        output_json,
         return_tensors="pt",
         padding="max_length",
         truncation=True,
-        max_length=128
+        max_length=256
     )["input_ids"].squeeze(0)
 
+    # Concatenate the input and output IDs, truncate to a maximum length of 512
     labels = torch.cat([input_ids, output_ids], dim=0)[:512]
     attention_mask = torch.ones_like(input_ids)
+
+    # Process the images into tensors
+    image_tensors = [processor.image_processor(img, return_tensors="pt")["pixel_values"].squeeze(0) for img in images]
+    pixel_values = torch.stack(image_tensors)  # [L, 3, H, W]
 
     return {
         "input_ids": input_ids,
         "attention_mask": attention_mask,
         "labels": labels,
-        "pixel_values": pixel_values  # [3, H, W]
+        "pixel_values": pixel_values
     }
 
 # === Custom collator ===
 def data_collator(features):
-    input_ids = [torch.tensor(f["input_ids"], dtype=torch.long) for f in features]
-    labels = [torch.tensor(f["labels"], dtype=torch.long) for f in features]
-    attention_mask = [torch.tensor(f["attention_mask"], dtype=torch.long) for f in features]
+    """
+    Custom collator for batching the data during training. Pads the sequences and images to ensure 
+    that all input sequences and image tensors in the batch have the same shape.
+    
+    Args:
+        features (list): A list of preprocessed examples to batch together.
+        
+    Returns:
+        dict: A dictionary containing batched and padded input tensors ready for model input.
+    """
+    input_ids = [f["input_ids"] for f in features]
+    labels = [f["labels"] for f in features]
+    attention_mask = [f["attention_mask"] for f in features]
+    pixel_values = [f["pixel_values"] for f in features]  # [L, 3, H, W]
 
-    pixel_values = []
-    for f in features:
-        pv = f["pixel_values"]
-        if isinstance(pv, list):
-            pv = torch.tensor(pv)
-        if pv.dim() == 3:  # [3, H, W]
-            pv = pv.unsqueeze(0)  # → [1, 3, H, W]
-        elif pv.dim() != 4:
-            raise ValueError(f"Unexpected pixel_value shape: {pv.shape}")
-        pixel_values.append(pv)
+    # Pad the sequences to the same length
+    input_ids = torch.nn.utils.rnn.pad_sequence(input_ids, batch_first=True, padding_value=0)
+    labels = torch.nn.utils.rnn.pad_sequence(labels, batch_first=True, padding_value=-100)
+    attention_mask = torch.nn.utils.rnn.pad_sequence(attention_mask, batch_first=True, padding_value=0)
 
-    # Final shape: [B, 1, 3, H, W]
-    pixel_values = torch.stack(pixel_values, dim=0).to(torch.float32)
+    # Pad the image tensors to the same length
+    max_len = max(pv.shape[0] for pv in pixel_values)
+    padded_pixel_values = []
+    for pv in pixel_values:
+        pad_len = max_len - pv.shape[0]
+        pad = torch.zeros((pad_len, *pv.shape[1:]), dtype=pv.dtype)
+        pv = torch.cat([pv, pad], dim=0)
+        padded_pixel_values.append(pv)
+
+    pixel_values = torch.stack(padded_pixel_values)  # [B, L, 3, H, W]
 
     return {
-        "input_ids": torch.nn.utils.rnn.pad_sequence(input_ids, batch_first=True, padding_value=0),
-        "labels": torch.nn.utils.rnn.pad_sequence(labels, batch_first=True, padding_value=-100),
-        "attention_mask": torch.nn.utils.rnn.pad_sequence(attention_mask, batch_first=True, padding_value=0),
+        "input_ids": input_ids,
+        "labels": labels,
+        "attention_mask": attention_mask,
         "pixel_values": pixel_values
     }
 
 # === Training ===
 def main():
+    """
+    The main function for training the model. It loads the dataset, preprocesses the data,
+    initializes the model, and sets up the training loop using Hugging Face's Trainer API.
+    """
+    # Initialize the processor and model from the pre-trained model path
     processor = AutoProcessor.from_pretrained(MODEL_PATH)
     model = AutoModelForImageTextToText.from_pretrained(
         MODEL_PATH,
-        device_map="auto",
-        torch_dtype=torch.float32,
-        quantization_config=bnb_config
+        device_map="auto", # Automatically distribute the model across available devices
+        torch_dtype=torch.float32, # Use 32-bit precision for training
+        quantization_config=bnb_config # Apply the quantization configuration
     )
-    model = get_peft_model(model, peft_config)
+    model = get_peft_model(model, peft_config) # Apply LoRA to the model
 
+    # Load and preprocess the dataset
     dataset_path = Path(__file__).parent.parent / "data" / "train.jsonl"
     dataset = load_data(dataset_path)
     dataset = dataset.map(lambda x: preprocess(x, processor), remove_columns=dataset.column_names)
 
+    # Set up training arguments
     args = TrainingArguments(
-        output_dir="./checkpoints",
-        per_device_train_batch_size=1,
-        gradient_accumulation_steps=4,
-        num_train_epochs=3,
-        learning_rate=2e-4,
-        logging_dir="./logs",
-        logging_steps=10,
-        save_strategy="epoch",
-        fp16=False
+        output_dir="./checkpoints", # Output directory for model checkpoints
+        per_device_train_batch_size=1, # Batch size per device
+        gradient_accumulation_steps=4, # Accumulate gradients over 4 steps
+        num_train_epochs=3, # Train for 3 epochs
+        learning_rate=2e-4, # Learning rate
+        logging_dir="./logs", # Directory to store logs
+        logging_steps=10, # Log training progress every 10 steps
+        save_strategy="epoch", # Save the model checkpoint at the end of each epoch
+        fp16=False # Whether to use 16-bit precision (disabled here for stability)
     )
 
+    # Initialize the Trainer class with the model, arguments, dataset, and collator
     trainer = Trainer(
-        model=model,
-        args=args,
-        train_dataset=dataset,
-        tokenizer=processor.tokenizer,
-        data_collator=data_collator
+        model=model, # The model to train
+        args=args, # Training arguments
+        train_dataset=dataset, # The preprocessed training dataset
+        tokenizer=processor.tokenizer, # The tokenizer to use for processing the input text
+        data_collator=data_collator # Custom collator to handle padding of inputs and images
     )
 
+    # Start the training loop
     trainer.train()
 
+# Execute the main function if the script is run directly
 if __name__ == "__main__":
     main()
-
-
 

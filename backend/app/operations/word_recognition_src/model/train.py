@@ -105,7 +105,8 @@ def preprocess(example, processor):
     # Helper function to convert values to tensors
     def to_tensor(val):
         if isinstance(val, list):
-            return torch.tensor(val, dtype=torch.long if all(isinstance(x, int) for x in val) else torch.float)
+            arr = np.array(val)
+            return torch.tensor(arr, dtype=torch.long if arr.dtype.kind in {'i','u'} else torch.float)
         elif isinstance(val, np.ndarray):
             return torch.tensor(val)
         elif isinstance(val, torch.Tensor):
@@ -118,6 +119,8 @@ def preprocess(example, processor):
     # Convert the encoding output into tensors
     encoding = {k: to_tensor(v) for k, v in encoding.items()}
     input_ids = encoding["input_ids"]
+    if input_ids.dim() > 1:
+        input_ids = input_ids.view(-1)
 
     # Prepare the output labels by encoding them
     output_json = json.dumps(example["output"], ensure_ascii=False)
@@ -128,6 +131,8 @@ def preprocess(example, processor):
         truncation=True,
         max_length=256
     )["input_ids"].squeeze(0)
+    if output_ids.dim() > 1:
+        output_ids = output_ids.view(-1)
 
     # Concatenate the input and output IDs, truncate to a maximum length of 512
     labels = torch.cat([input_ids, output_ids], dim=0)[:512]
@@ -156,10 +161,21 @@ def data_collator(features):
     Returns:
         dict: A dictionary containing batched and padded input tensors ready for model input.
     """
-    input_ids = [f["input_ids"] for f in features]
-    labels = [f["labels"] for f in features]
-    attention_mask = [f["attention_mask"] for f in features]
-    pixel_values = [f["pixel_values"] for f in features]  # [L, 3, H, W]
+    input_ids = [torch.as_tensor(f["input_ids"]) for f in features]
+    labels = [torch.as_tensor(f["labels"]) for f in features]
+    attention_mask = [torch.as_tensor(f["attention_mask"]) for f in features]
+
+    pixel_values = []
+    for f in features:
+        pv = torch.as_tensor(f["pixel_values"])
+        if pv.dim() == 3:  # single image [3, H, W]
+            pv = pv.unsqueeze(0)
+        elif pv.dim() > 3:
+            # Collapse all leading dimensions except the last three (C, H, W)
+            pv = pv.view(-1, *pv.shape[-3:])
+        else:
+            raise ValueError(f"Unexpected pixel_values shape: {pv.shape}")
+        pixel_values.append(pv)
 
     # Pad the sequences to the same length
     input_ids = torch.nn.utils.rnn.pad_sequence(input_ids, batch_first=True, padding_value=0)

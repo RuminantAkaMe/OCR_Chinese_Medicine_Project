@@ -8,7 +8,7 @@ from transformers import AutoProcessor, AutoModelForImageTextToText
 from PIL import Image
 from pathlib import Path
 import json
-
+# num_candidates=5, put after max_new_tokens as argument
 def generate_candidates_with_confidence(model, processor, input_sequence, max_new_tokens=64, device="cuda" if torch.cuda.is_available() else "cpu"):
     """
     Generates word predictions with associated confidence scores based on an OCR-character image sequence.
@@ -74,6 +74,11 @@ def generate_candidates_with_confidence(model, processor, input_sequence, max_ne
             **chat_inputs,
             max_new_tokens=max_new_tokens,
             do_sample=False,
+            #do_sample=True,                   # Enable sampling! -> Candidates!
+            #top_k=50,                         # Optional: control diversity
+            #top_p=0.9,
+            #temperature=0.8,
+            #num_return_sequences=num_candidates,
             return_dict_in_generate=True,
             output_scores=True
         )
@@ -103,6 +108,23 @@ def generate_candidates_with_confidence(model, processor, input_sequence, max_ne
         "logprobs": logprobs
     }
 
+def load_input_sequence():
+    """
+    Load the sequence.json file located in ../data/ relative to this script.
+    """
+    # Get the absolute path to the current script
+    script_dir = Path(__file__).resolve().parent
+
+    # Path to ../data/sequence.json relative to this script
+    sequence_path = script_dir.parent / "data" / "sequence.json"
+
+    # Debug print (optional)
+    print(f"Loading input from: {sequence_path}")
+
+    # Load JSON
+    with open(sequence_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
 if __name__ == "__main__":
     # Local path to the SmolVLM model folder
     MODEL_PATH = "E:/Software-Projekte/SmolVLM/SmolVLM2-2.2B-Instruct"
@@ -114,15 +136,18 @@ if __name__ == "__main__":
         _attn_implementation="eager"
     ).to("cuda")
 
-    # Example OCR character sequence
-    example_input = [
+    '''
+    The input sequence for inference.py should be of this form:
+    inference_input = [
         { "id": 0, "ocr": "牛", "ocr_confidence": 0.69, "img": "input/000.png" },
         { "id": 1, "ocr": "黃", "ocr_confidence": 0.41, "img": "input/001.png" },
         { "id": 2, "ocr": "散", "ocr_confidence": 0.77, "img": "input/002.png" }
     ]
+    '''
+    inference_input = load_input_sequence()
 
     # Run inference
-    result = generate_candidates_with_confidence(model, processor, example_input)
+    result = generate_candidates_with_confidence(model, processor, inference_input)
     # Pretty-print output
     print(json.dumps(result, ensure_ascii=False, indent=2))
 '''

@@ -1,8 +1,8 @@
-# to train call in bash: $ python backend/app/operations/word_recognition_src/model/train.py
+# to train call in bash: $ python backend/app/operations/word_recognition_src/model/train_llava.py
 # DONT FORGET to activate your python environment: source backend/.venv310/Scripts/activate
 # image size must be divisable by 14
 
-# train.py
+# train_llava.py
 
 from transformers import LlavaOnevisionForConditionalGeneration, AutoProcessor, TrainingArguments, Trainer
 from transformers import BitsAndBytesConfig
@@ -12,7 +12,6 @@ from pathlib import Path
 from PIL import Image
 import torch
 import json
-import numpy as np
 
 # === Model and processor configuration ===
 # Define the path to the pre-trained model you will be fine-tuning
@@ -91,33 +90,18 @@ def preprocess(example, processor):
     }]
 
     # Apply the processor's chat template to format the messages for the model
+    # Returning tensors here ensures pixel values and image sizes are computed
+    # exactly as expected by the model's vision tower.
     encoding = processor.apply_chat_template(
         messages,
         add_generation_prompt=True,
         tokenize=True,
         return_dict=True,
-        return_tensors=None
+        return_tensors="pt",
     )
 
-    # Helper function to convert values to tensors
-    def to_tensor(val):
-        if isinstance(val, list):
-            arr = np.array(val)
-            return torch.tensor(arr, dtype=torch.long if arr.dtype.kind in {'i','u'} else torch.float)
-        elif isinstance(val, np.ndarray):
-            return torch.tensor(val)
-        elif isinstance(val, torch.Tensor):
-            return val
-        elif isinstance(val, (float, int)):
-            return torch.tensor([val])
-        else:
-            raise TypeError(f"Cannot convert type {type(val)} to tensor")
+    input_ids = encoding["input_ids"].view(-1)
 
-    # Convert the encoding output into tensors
-    encoding = {k: to_tensor(v) for k, v in encoding.items()}
-    input_ids = encoding["input_ids"]
-    if input_ids.dim() > 1:
-        input_ids = input_ids.view(-1)
 
     # Prepare the output labels by encoding them
     output_json = json.dumps(example["output"], ensure_ascii=False)
@@ -135,15 +119,26 @@ def preprocess(example, processor):
     labels = torch.cat([input_ids, output_ids], dim=0)[:512]
     attention_mask = torch.ones_like(input_ids)
 
-    # Process the images into tensors
-    image_tensors = [processor.image_processor(img, return_tensors="pt")["pixel_values"].squeeze(0) for img in images]
-    pixel_values = torch.stack(image_tensors)  # [L, 3, H, W]
+    # Manually process the images so we can record the exact tensor shapes
+    # used during training. This ensures the patch counts match the model's
+    # vision tower expectations.
+    image_tensors = []
+    image_sizes = []
+    for img in images:
+        processed = processor.image_processor(img, return_tensors="pt")
+        tensor = processed["pixel_values"].squeeze(0)
+        image_tensors.append(tensor)
+        # record the tensor height/width after processing
+        image_sizes.append(list(tensor.shape[-2:]))
+
+    pixel_values = torch.stack(image_tensors)
 
     return {
         "input_ids": input_ids,
         "attention_mask": attention_mask,
         "labels": labels,
-        "pixel_values": pixel_values
+        "pixel_values": pixel_values,
+        "image_sizes": image_sizes,
     }
 
 # === Custom collator ===
@@ -162,39 +157,44 @@ def data_collator(features):
     labels = [torch.as_tensor(f["labels"]) for f in features]
     attention_mask = [torch.as_tensor(f["attention_mask"]) for f in features]
 
-    pixel_values = []
+    pixel_values_list = []
+    image_sizes_list = []
     for f in features:
-        pv = torch.as_tensor(f["pixel_values"])
-        if pv.dim() == 3:  # single image [3, H, W]
+        pv = f["pixel_values"]
+        if isinstance(pv, list):
+            pv = torch.stack([torch.as_tensor(p) for p in pv])
+        else:
+            pv = torch.as_tensor(pv)
+
+        sizes = torch.as_tensor(f["image_sizes"])
+        if pv.dim() == 3:
             pv = pv.unsqueeze(0)
+            sizes = sizes.unsqueeze(0)
         elif pv.dim() > 3:
-            # Collapse all leading dimensions except the last three (C, H, W)
             pv = pv.view(-1, *pv.shape[-3:])
+            sizes = sizes.view(-1, 2)
         else:
             raise ValueError(f"Unexpected pixel_values shape: {pv.shape}")
-        pixel_values.append(pv)
+        pixel_values_list.append(pv)
+        image_sizes_list.append(sizes)
 
     # Pad the sequences to the same length
     input_ids = torch.nn.utils.rnn.pad_sequence(input_ids, batch_first=True, padding_value=0)
     labels = torch.nn.utils.rnn.pad_sequence(labels, batch_first=True, padding_value=-100)
     attention_mask = torch.nn.utils.rnn.pad_sequence(attention_mask, batch_first=True, padding_value=0)
 
-    # Pad the image tensors to the same length
-    max_len = max(pv.shape[0] for pv in pixel_values)
-    padded_pixel_values = []
-    for pv in pixel_values:
-        pad_len = max_len - pv.shape[0]
-        pad = torch.zeros((pad_len, *pv.shape[1:]), dtype=pv.dtype)
-        pv = torch.cat([pv, pad], dim=0)
-        padded_pixel_values.append(pv)
-
-    pixel_values = torch.stack(padded_pixel_values)  # [B, L, 3, H, W]
+    # Concatenate all images across the batch. This avoids introducing dummy
+    # image entries with zero sizes, which previously caused division-by-zero
+    # errors when computing patch counts.
+    pixel_values = torch.cat(pixel_values_list, dim=0)
+    image_sizes = torch.cat(image_sizes_list, dim=0)
 
     return {
         "input_ids": input_ids,
         "labels": labels,
         "attention_mask": attention_mask,
-        "pixel_values": pixel_values
+        "pixel_values": pixel_values,
+        "image_sizes": image_sizes
     }
 
 # === Training ===

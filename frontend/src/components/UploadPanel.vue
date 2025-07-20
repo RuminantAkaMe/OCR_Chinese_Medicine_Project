@@ -1,16 +1,16 @@
 <template>
   <v-card class="pa-4" elevation="3">
-    <v-card-title>📤 Upload file</v-card-title>
+    <v-card-title>🡅 Upload file</v-card-title>
     <v-card-text>
       <v-file-input
         label="Select file"
         v-model="selectedFile"
-        accept="image/*"
+        accept="image/*,.pdf"
         outlined
         dense
         :disabled="loading"
       />
-      <v-btn class="mt-3" :disabled="!selectedFile || loading" @click="upload">
+      <v-btn class="mt-3" :disabled="!selectedFile || loading" @click="upload" color="button">
         <template v-if="loading">
           <v-progress-circular indeterminate color="white" size="16" class="me-2" />
           Loading...

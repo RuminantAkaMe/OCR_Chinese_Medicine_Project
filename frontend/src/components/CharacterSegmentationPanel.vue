@@ -1,13 +1,13 @@
 <template>
   <v-card class="pa-4" elevation="3">
-    <v-card-title>3. Character Segmentation</v-card-title>
+    <v-card-title>2. Character Segmentation</v-card-title>
     <v-alert v-if="disabled" type="warning" dense class="pa-1 text-caption">
       Please complete Character Detection first.
     </v-alert>
 
 
     <v-card-text>
-      <v-btn :disabled="!store.selectedFile || disabled" @click="segment"> Segment Characters </v-btn>
+      <v-btn :disabled="!store.selectedFile || disabled" @click="segment" color="button"> Segment Characters </v-btn>
     </v-card-text>
   </v-card>
 </template>

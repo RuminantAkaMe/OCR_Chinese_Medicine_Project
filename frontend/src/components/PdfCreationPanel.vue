@@ -1,13 +1,13 @@
 <template>
   <v-card class="pa-4" elevation="3">
-    <v-card-title>6. PDF Creation</v-card-title>
+    <v-card-title>5. Process Result</v-card-title>
     <v-alert v-if="disabled" type="warning" dense class="pa-1 text-caption">
       Please complete Word Recognition first.
     </v-alert>
 
 
     <v-card-text>
-      <v-btn :disabled="!store.selectedFile || disabled" @click="createPdf"> Create PDF </v-btn>
+      <v-btn :disabled="!store.selectedFile || disabled" @click="createPdf" color="button"> Create PDF </v-btn>
     </v-card-text>
   </v-card>
 </template>

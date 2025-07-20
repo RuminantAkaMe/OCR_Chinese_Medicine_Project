@@ -6,7 +6,8 @@
           {{ store.snackbar.message }}
         </v-snackbar>
         <!-- Tabs Navigation -->
-        <v-tabs v-model="tab" background-color="primary" dark grow>
+        <app-tool-bar></app-tool-bar>
+        <v-tabs v-model="tab" bg-color="background" dark grow>
           <v-tab to="/">Home</v-tab>
           <v-tab to="/about">About</v-tab>
         </v-tabs>
@@ -22,6 +23,7 @@
 import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUploadStore } from '@/stores/uploadStore'
+import AppToolBar from './components/AppToolBar.vue'
 
 const store = useUploadStore()
 

@@ -1,13 +1,13 @@
 <template>
   <v-card class="pa-4" elevation="3">
-    <v-card-title>2. Character Detection</v-card-title>
+    <v-card-title>1. Character Detection</v-card-title>
     <v-alert v-if="disabled" type="warning" dense class="pa-1 text-caption">
       Please complete Preprocessing first.
     </v-alert>
 
 
     <v-card-text>
-      <v-btn :disabled="!store.selectedFile || disabled" @click="detect"> Detect Characters </v-btn>
+      <v-btn :disabled="!store.selectedFile || disabled" @click="detect" color="button"> Detect Characters </v-btn>
     </v-card-text>
   </v-card>
 </template>

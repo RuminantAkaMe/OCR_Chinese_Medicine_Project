@@ -1,13 +1,13 @@
 <template>
   <v-card class="pa-4" elevation="3">
-    <v-card-title>5. Word Recognition (LLM)</v-card-title>
+    <v-card-title>4. Word Recognition</v-card-title>
     <v-alert v-if="disabled" type="warning" dense class="pa-1 text-caption">
       Please complete Character Recognition first.
     </v-alert>
 
 
     <v-card-text>
-      <v-btn :disabled="!store.selectedFile || disabled" @click="recognize"> Recognize Words </v-btn>
+      <v-btn :disabled="!store.selectedFile || disabled" @click="recognize" color="button"> Recognize Words </v-btn>
     </v-card-text>
   </v-card>
 </template>

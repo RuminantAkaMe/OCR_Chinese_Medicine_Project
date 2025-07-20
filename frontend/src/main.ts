@@ -16,6 +16,22 @@ const vuetify = createVuetify({
     aliases,
     sets: { mdi },
   },
+  theme: {
+    defaultTheme: 'FauTheme',
+    themes: {
+      FauTheme: {
+        dark: false,
+        colors: {
+          primary: '#8C9FB1',
+          secondary: '#D3DDE6',
+          surface: '#2F586E',
+          background: '#D3DDE6',
+          button: '#204251',
+          warning: '#204251',
+        },
+      },
+    },
+  },
 })
 
 createApp(App).use(router).use(vuetify).use(createPinia()).mount('#app')

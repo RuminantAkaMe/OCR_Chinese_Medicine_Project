@@ -11,8 +11,8 @@
             </p>
 
             <p>
-              You can upload images and guide them step-by-step through the following processing stages:
-              preprocessing, character detection, character segmentation, character recognition (OCR), and PDF generation.
+              You can upload documents and guide them step-by-step through the following processing stages:
+              character detection, character segmentation, character recognition, word recogntion and processing the final result.
             </p>
 
             <p>
@@ -20,7 +20,10 @@
             </p>
 
             <p class="mt-4">
-              <strong>Technologies:</strong> Vue 3, TypeScript, Pinia, Vuetify, FastAPI, Pillow
+              <strong>Technologies:</strong> Vue 3, TypeScript, Pinia, Vuetify, FastAPI, Pillow, PyTorch, YOLO, LLaVA, Transformers, PEFT, LoRA, bitsandbytes
+            </p>
+            <p class="mt-4">
+              <strong>Developed by:</strong> Roman Hucke, Karthik Muthathi Dinesh, Hardik Chauhan, Weiwei Zhang
             </p>
           </v-card-text>
         </v-card>

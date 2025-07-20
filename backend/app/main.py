@@ -7,6 +7,7 @@ Includes:
 - Processing endpoints (preprocessing, detection, segmentation, recognition, PDF creation)
 - Reset endpoint (/api/reset)
 - Download endpoint (/api/download/{filename})
+- Preview endpoint (/api/preview/{filename})
 
 Global variables:
 - original_file_path → path to the original uploaded file
@@ -21,7 +22,6 @@ Uses:
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from app.operations import preprocessing
 from app.operations import character_detection 
 from app.operations import character_segmentation 
 from app.operations import character_recognition
@@ -29,6 +29,9 @@ from app.operations import word_recognition
 from app.operations import pdf_creation
 import os
 import shutil
+from fastapi.responses import FileResponse
+import mimetypes
+from fastapi import HTTPException
 
 app = FastAPI()
 
@@ -53,7 +56,6 @@ processed_file_path: str | None = None
 @app.post("/api/upload")
 async def upload_file(file: UploadFile = File(...)):
     global original_file_path, processed_file_path
-
     # Clear the upload directory
     for filename in os.listdir(UPLOAD_DIR):
         file_path = os.path.join(UPLOAD_DIR, filename)
@@ -102,32 +104,30 @@ def download_file(filename: str):
     )
 
 # =========================
-# ✨ Preprocessing step (resize, normalize, etc.)
+# 📄 Preview endpoint (used in <iframe>, <img>, etc.)
 # =========================
-@app.post("/api/preprocess")
-async def preprocess_file():
-    global original_file_path, processed_file_path
+@app.get("/api/preview/{filename}")
+def preview_file(filename: str):
+    global processed_file_path
 
-    if original_file_path is None or not os.path.exists(original_file_path):
-        return {"error": "No file uploaded."}
+    if processed_file_path is None or not os.path.exists(processed_file_path):
+        return {"error": "No file available for preview."}
 
-    input_path = processed_file_path or original_file_path
+    mime_type, _ = mimetypes.guess_type(processed_file_path)
+    if mime_type is None:
+        mime_type = "application/octet-stream"
 
-    from PIL import Image
-    image = Image.open(input_path)
-
-    processed_image = preprocessing.run(image)
-
-    filename = os.path.basename(input_path)
-    output_filename = f"preprocessing_{filename}"
-    output_path = os.path.join(UPLOAD_DIR, output_filename)
-    processed_image.save(output_path)
-
-    processed_file_path = output_path
-
-    return {
-        "filename": os.path.basename(processed_file_path)
+    # Force inline rendering (e.g. show PDF/image in browser)
+    headers = {
+        "Content-Disposition": f'inline; filename="{filename}"'
     }
+
+    return FileResponse(
+        path=processed_file_path,
+        filename=filename,
+        media_type=mime_type,
+        headers=headers
+    )
 
 # =========================
 # 🎯 Character Detection step
@@ -135,21 +135,24 @@ async def preprocess_file():
 @app.post("/api/detect")
 async def detect_characters():
     global original_file_path, processed_file_path
-
     if original_file_path is None or not os.path.exists(original_file_path):
-        return {"error": "No file uploaded."}
+        raise HTTPException(status_code=400, detail="No file uploaded.")
 
     input_path = processed_file_path or original_file_path
-
-    from PIL import Image
-    image = Image.open(input_path)
-
-    processed_image = character_detection.run(image)
-
     filename = os.path.basename(input_path)
+
+    if not filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Expected a PDF file.")
+
+    # returns a result for UI Presentation
+    source_path = character_detection.run(input_path)
+
+    filename = os.path.basename(source_path)
     output_filename = f"character_detection_{filename}"
     output_path = os.path.join(UPLOAD_DIR, output_filename)
-    processed_image.save(output_path)
+
+    # Copy the result to the desired output path
+    shutil.copyfile(source_path, output_path)
 
     processed_file_path = output_path
 
@@ -165,19 +168,17 @@ async def segment_characters():
     global original_file_path, processed_file_path
 
     if original_file_path is None or not os.path.exists(original_file_path):
-        return {"error": "No file uploaded."}
+        raise HTTPException(status_code=400, detail="No file uploaded.")
 
-    input_path = processed_file_path or original_file_path
+    # returns a result for UI Presentation
+    source_path = character_segmentation.run()
 
-    from PIL import Image
-    image = Image.open(input_path)
-
-    processed_image = character_segmentation.run(image)
-
-    filename = os.path.basename(input_path)
+    filename = os.path.basename(source_path)
     output_filename = f"character_segmentation_{filename}"
     output_path = os.path.join(UPLOAD_DIR, output_filename)
-    processed_image.save(output_path)
+    
+    # Copy the result to the desired output path
+    shutil.copyfile(source_path, output_path)
 
     processed_file_path = output_path
 
@@ -193,19 +194,17 @@ async def recognize_characters():
     global original_file_path, processed_file_path
 
     if original_file_path is None or not os.path.exists(original_file_path):
-        return {"error": "No file uploaded."}
+        raise HTTPException(status_code=400, detail="No file uploaded.")
 
-    input_path = processed_file_path or original_file_path
+    # returns a result for UI Presentation
+    source_path = character_recognition.run()
 
-    from PIL import Image
-    image = Image.open(input_path)
-
-    processed_image = character_recognition.run(image)
-
-    filename = os.path.basename(input_path)
+    filename = os.path.basename(source_path)
     output_filename = f"character_recognition_{filename}"
     output_path = os.path.join(UPLOAD_DIR, output_filename)
-    processed_image.save(output_path)
+    
+    # Copy the result to the desired output path
+    shutil.copyfile(source_path, output_path)
 
     processed_file_path = output_path
 
@@ -221,26 +220,22 @@ async def recognize_words():
     global original_file_path, processed_file_path
 
     if original_file_path is None or not os.path.exists(original_file_path):
-        return {"error": "No file uploaded."}
+       raise HTTPException(status_code=400, detail="No file uploaded.")
 
-    # Run the word recognition logic (generates and returns image path)
-    generated_image_path = word_recognition.run()
+    # returns a result for UI Presentation
+    source_path = word_recognition.run()
 
-    # Use current input filename to construct consistent output filename
-    input_filename = os.path.basename(processed_file_path or original_file_path)
-    output_filename = f"word_recognition_{input_filename}"
+    filename = os.path.basename(source_path)
+    output_filename = f"word_recognition_{filename}"
     output_path = os.path.join(UPLOAD_DIR, output_filename)
+    
+    # Copy the result to the desired output path
+    shutil.copyfile(source_path, output_path)
 
-    # Copy the image result into the UPLOAD_DIR
-    from shutil import copyfile
-    copyfile(generated_image_path, output_path)
-
-    # Update processed_file_path so it can be downloaded or passed to next steps
     processed_file_path = output_path
 
-    print("✅ Output image path:", output_path)
     return {
-        "filename": os.path.basename(output_path)
+        "filename": os.path.basename(processed_file_path)
     }
 
 
@@ -252,14 +247,10 @@ async def create_pdf():
     global original_file_path, processed_file_path
 
     if original_file_path is None or not os.path.exists(original_file_path):
-        return {"error": "No file uploaded."}
+        raise HTTPException(status_code=400, detail="No file uploaded.")
 
-    input_path = processed_file_path or original_file_path
-
-    from PIL import Image
-    image = Image.open(input_path)
-
-    processed_pdf_path = pdf_creation.run(image, UPLOAD_DIR)
+    # returns a result for UI Presentation
+    processed_pdf_path = pdf_creation.run(UPLOAD_DIR)
 
     processed_file_path = processed_pdf_path
 

@@ -1,8 +1,8 @@
 <template>
   <v-card class="pa-4" elevation="3">
-    <v-card-title>📥 Download Result</v-card-title>
+    <v-card-title>🡇 Download Result</v-card-title>
     <v-card-text>
-      <v-btn :href="downloadUrl" download :disabled="!store.processedFilename">
+      <v-btn :href="downloadUrl" download :disabled="!store.processedFilename" color="button">
         Download
       </v-btn>
     </v-card-text>

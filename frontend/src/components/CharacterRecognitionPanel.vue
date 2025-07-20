@@ -1,13 +1,13 @@
 <template>
   <v-card class="pa-4" elevation="3">
-    <v-card-title>4. Character Recognition (OCR)</v-card-title>
+    <v-card-title>3. Character Recognition</v-card-title>
     <v-alert v-if="disabled" type="warning" dense class="pa-1 text-caption">
       Please complete Character Segmentation first.
     </v-alert>
 
 
     <v-card-text>
-      <v-btn :disabled="!store.selectedFile || disabled" @click="recognize"> Recognize Characters </v-btn>
+      <v-btn :disabled="!store.selectedFile || disabled" @click="recognize" color="button"> Recognize Characters </v-btn>
     </v-card-text>
   </v-card>
 </template>

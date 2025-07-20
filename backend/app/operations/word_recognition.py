@@ -1,33 +1,49 @@
-# word_recognition.py
-
 from pathlib import Path
-import json
-from app.operations.word_recognition_src.model.llm_prediction import query_model
-from app.operations.word_recognition_src.json_to_img import render_raw_json_to_image
+import subprocess
+import os
 
 def run() -> str:
     """
-    Executes the word recognition pipeline using SmolVLM2.
-
-    This function loads a character sequence (with image references and OCR text),
-    passes it to the large language model for inference, and stores the raw result.
+    Runs the sliding window inference script for word recognition,
+    and returns the path to output.json for presentation.
 
     Returns:
-        str: Path to the JSON file containing the model's response.
+        str: Absolute path to word recognition output.json
     """
-    BASE_DIR = Path(__file__).resolve().parent
-    DATA_DIR = BASE_DIR / "word_recognition_src" / "data"
-    sequence_path = DATA_DIR / "sequence.json"
-    output_path = DATA_DIR / "output.json"
+    # operations_dir = /.../backend/app/operations
+    operations_dir = Path(__file__).resolve().parent
+    app_dir = operations_dir.parent
+    backend_dir = app_dir.parent
 
-    # Perform inference on the complete input sequence using the language model
-    result = query_model(sequence_path)
+    # Path to output of previous stage (not used in this script directly)
+    input_path = operations_dir / "character_recognition_src" / "data" / "output"
 
-    # Save the raw model output to a file
-    with output_path.open("w", encoding="utf-8") as f:
-        json.dump({"response": result}, f, ensure_ascii=False, indent=2)
+    # Final output used by UI
+    presentation_path = operations_dir / "word_recognition_src" / "data" / "output" / "output_full.json"
 
-    return render_raw_json_to_image(str(output_path))
+    # Ensure output dir exists
+    output_path = operations_dir / "word_recognition_src" / "data" / "output"
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    # Path to Python environment
+    env_python = backend_dir / ".venv310" / "Scripts" / "python.exe" 
+
+    # Path to the sliding window inference script
+    script = operations_dir / "word_recognition_src" / "model" / "sliding_window_inference.py"
+
+    # Define parameters
+    window_size = "6"
+    step_size = "3"  # or leave out to auto-use window_size // 2 in the script
+
+    # Run the script
+    subprocess.run(
+        [env_python, str(script), "--window-size", window_size, "--step", step_size],
+        check=True
+    )
+
+    return str(presentation_path)
+
+
 
 
 

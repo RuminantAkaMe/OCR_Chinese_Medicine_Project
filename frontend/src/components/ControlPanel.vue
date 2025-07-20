@@ -1,6 +1,6 @@
 <template>
   <v-card class="pa-4" elevation="3">
-    <v-card-title>⚙️ Options</v-card-title>
+    <v-card-title>⚙ Options</v-card-title>
     <v-card-text>
       <v-btn color="error" @click="reset" :disabled="!store.processedFilename">
         Reset

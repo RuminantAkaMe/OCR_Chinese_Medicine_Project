@@ -133,7 +133,7 @@ def load_input_sequence():
     script_dir = Path(__file__).resolve().parent
 
     # Path to ../data/sequence.json relative to this script
-    sequence_path = script_dir.parent / "data" / "sequence.json"
+    sequence_path = script_dir.parent / "data" / "sequence_temp.json"
 
     # Debug print (optional)
     print(f"Loading input from: {sequence_path}")
@@ -141,8 +141,8 @@ def load_input_sequence():
     # Load JSON
     with open(sequence_path, "r", encoding="utf-8") as f:
         return json.load(f)
-
-if __name__ == "__main__":
+    
+def main():
     # Local path to the LLaVA model folder
     MODEL_PATH = "E:/Software-Projekte/Llava/llava-onevision-qwen2-0.5b-ov-hf"
     # Load processor and model
@@ -167,6 +167,14 @@ if __name__ == "__main__":
     result = generate_candidates_with_confidence(model, processor, inference_input)
     # Pretty-print output
     print(json.dumps(result, ensure_ascii=False, indent=2))
+    # Save to output file
+    output_path = Path(__file__).resolve().parent.parent / "data" / "output" / "output.json"
+    output_path.parent.mkdir(parents=True, exist_ok=True)  # if folder missing
+    with output_path.open("w", encoding="utf-8") as f:
+        json.dump(result, f, ensure_ascii=False, indent=2)
+
+if __name__ == "__main__":
+    main()
 '''
 What is a Log Probability in Language Models:
 

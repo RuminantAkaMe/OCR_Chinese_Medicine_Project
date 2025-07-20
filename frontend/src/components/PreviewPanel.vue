@@ -2,14 +2,39 @@
   <v-card class="pa-4" elevation="3">
     <v-card-title>🖼 Preview</v-card-title>
     <v-card-text>
-      <div v-if="imageUrl">
+      <!-- No file available -->
+      <div v-if="!store.processedFilename" class="text-grey">
+        No file available.
+      </div>
+
+      <!-- Image preview -->
+      <div v-else-if="currentType === 'image'">
         <img
-          :src="imageUrl"
+          :src="fileUrl"
           alt="Preview"
           style="max-width: 100%; max-height: 400px; border: 1px solid #ccc"
         />
       </div>
-      <div v-else class="text-grey">No image avaiable.</div>
+
+      <!-- PDF preview -->
+      <div v-else-if="currentType === 'pdf'">
+        <iframe
+          :src="fileUrl"
+          style="width: 100%; height: 400px; border: 1px solid #ccc"
+        ></iframe>
+      </div>
+
+      <!-- JSON preview -->
+      <div v-else-if="currentType === 'json'">
+        <v-code style="max-height: 400px; overflow-y: auto">
+          {{ jsonContent }}
+        </v-code>
+      </div>
+
+      <!-- Unsupported format -->
+      <div v-else class="text-grey">
+        Unsupported file type.
+      </div>
     </v-card-text>
   </v-card>
 </template>
@@ -18,23 +43,78 @@
 /**
  * 🖼 PreviewPanel.vue
  *
- * Displays a live preview of the currently processed image.
- * Uses `processedFilename` from the UploadStore to load the image via `/api/download/<filename>`.
- *
- * Display:
- * - No image: text hint
- * - Image: `<img>` element with a fixed maximum size
- *
- * Reactive:
- * - Automatically updates when `processedFilename` changes
+ * Displays a preview of the currently processed file.
+ * Supports:
+ * - Images (.png, .jpg, etc.): rendered via <img>
+ * - PDFs (.pdf): rendered via <iframe>
+ * - JSON (.json): loaded and shown as formatted text
+ * - Other: fallback message
  */
 
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useUploadStore } from '@/stores/uploadStore'
 
 const store = useUploadStore()
 
-const imageUrl = computed(() =>
-  store.processedFilename ? `http://localhost:8000/api/download/${store.processedFilename}` : '',
+// Build file URL
+const fileUrl = computed(() =>
+  store.processedFilename
+    ? `http://localhost:8000/api/preview/${store.processedFilename}`
+    : '',
 )
+
+// Track file type explicitly
+const currentType = ref<'image' | 'pdf' | 'json' | 'other'>('other')
+
+watch(
+  () => store.processedFilename,
+  (filename) => {
+    if (!filename) {
+      currentType.value = 'other'
+      return
+    }
+
+    const ext = filename.split('.').pop()?.toLowerCase()
+    console.log(ext)
+    if (!ext) {
+      currentType.value = 'other'
+    } else if (['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'].includes(ext)) {
+      currentType.value = 'image'
+    } else if (ext === 'pdf') {
+      currentType.value = 'pdf'
+    } else if (ext === 'json') {
+      currentType.value = 'json'
+    } else {
+      currentType.value = 'other'
+    }
+  },
+  { immediate: true }
+)
+
+// Load JSON content when needed
+const jsonContent = ref('')
+watch(fileUrl, async (url) => {
+  if (currentType.value === 'json' && url) {
+    try {
+      const res = await fetch(url)
+      const data = await res.json()
+      jsonContent.value = JSON.stringify(data, null, 2)
+    } catch (err) {
+      jsonContent.value = `⚠️ Failed to load JSON: ${err}`
+    }
+  } else {
+    jsonContent.value = ''
+  }
+})
 </script>
+
+<style scoped>
+v-code {
+  font-family: monospace;
+  white-space: pre-wrap;
+  background-color: #f5f5f5;
+  padding: 8px;
+  border-radius: 4px;
+  display: block;
+}
+</style>

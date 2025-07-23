@@ -149,9 +149,9 @@ def evaluate_prediction(pred_image_path, gt_json_path, model_path,
 
 if __name__ == "__main__":
     evaluate_prediction(
-        pred_image_path='Datasets/labeled/8_org.jpeg',
-        gt_json_path='Datasets/labeled/8_org.jpeg.json',
-        model_path='models/chinese_characters_model3/weights/best.pt',
+        pred_image_path='LabeledImage/8_org.jpeg',
+        gt_json_path='LabeledImage/8_org.jpeg.json',
+        model_path='yolov10n.pt',
         iou_threshold=0.1,     # A realistic match threshold
         conf_threshold=0.5,    # Balanced confidence
         pad_pixels=4

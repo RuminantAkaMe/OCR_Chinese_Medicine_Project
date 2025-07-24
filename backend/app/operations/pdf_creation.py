@@ -3,26 +3,41 @@
 # DONT FORGET to activate your python environment:
 # source backend/.venv310/Scripts/activate
 
+"""
+Script for generating an annotated PDF from a sequence of OCR-processed character images
+and corresponding word recognition predictions.
+
+Each page shows character images in a row, overlays prediction bounding boxes with
+confidence-based coloring, and includes a legend summarizing recognized words and scores.
+
+Usage (from project root):
+$ source backend/.venv310/Scripts/activate
+$ python backend/app/operations/pdf_creation.py --output_dir backend/uploaded_files
+"""
+
 from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 import json
+#import hashlib
+#from collections import defaultdict
+
 
 def load_chinese_font(font_size: int) -> ImageFont.ImageFont:
     """
-    Attempts to load a font that supports Chinese characters.
-    Tries common font locations, returns a fallback if none found.
+    Attempts to load a Chinese-capable font to render characters in the PDF.
+    Falls back to system fonts and finally PIL's default if none found.
 
     Args:
         font_size (int): Desired font size.
 
     Returns:
-        ImageFont.ImageFont: Loaded font that supports Chinese text.
+        ImageFont.ImageFont: A loaded font object.
     """
     possible_fonts = [
-        Path(__file__).resolve().parent / "fonts" / "NotoSansSC-Regular.ttf",
-        Path("C:/Windows/Fonts/msyh.ttc"),
-        Path("C:/Windows/Fonts/simsun.ttc"),
-        Path("arial.ttf"),
+        Path(__file__).resolve().parent / "fonts" / "NotoSansSC-Regular.ttf",  # Project font
+        Path("C:/Windows/Fonts/msyh.ttc"),  # Microsoft YaHei
+        Path("C:/Windows/Fonts/simsun.ttc"),  # SimSun
+        Path("arial.ttf"),  # Arial fallback
     ]
     for font_path in possible_fonts:
         if font_path.exists():
@@ -32,170 +47,184 @@ def load_chinese_font(font_size: int) -> ImageFont.ImageFont:
                 continue
     return ImageFont.load_default()
 
-def get_color_for_confidence(conf: float) -> str:
+
+def get_confidence_color(conf: float) -> str:
     """
-    Maps a confidence value to a color for bounding boxes.
+    Maps a prediction confidence score to a display color.
 
     Args:
-        conf (float): Confidence score from the model.
+        conf (float): Confidence value between 0.0 and 1.0
 
     Returns:
-        str: Color name for drawing the rectangle.
+        str: A color string ("green", "orange", "red")
     """
     if conf >= 0.7:
-        return "green"
+        return "green"  # High confidence
     elif conf >= 0.4:
-        return "orange"
+        return "orange"  # Medium confidence
     else:
-        return "red"
+        return "red"  # Low confidence
+
 
 def run(output_dir: str) -> str:
     """
-    Generates a visual PDF showing:
-    - OCR-segmented character images
-    - OCR labels under each image
-    - Predicted word spans from the model, with bounding boxes
-    - Confidence-based coloring for each prediction
+    Main function that loads OCR character images and word recognition predictions,
+    arranges them into annotated PDF pages, and saves the final document.
 
     Args:
-        output_dir (str): Directory where the output PDF will be saved.
+        output_dir (str): Directory path where the output PDF will be stored.
 
     Returns:
-        str: Path to the generated PDF file.
+        str: Full path to the generated PDF file.
     """
-    # Define project-relative paths
+    # Locate necessary paths
     operations_dir = Path(__file__).resolve().parent
     data_dir = operations_dir / "word_recognition_src" / "data"
     sequence_path = data_dir / "sequence.json"
     word_recognition_path = data_dir / "output" / "output_full.json"
 
-    # Load sequence and prediction data
+    # Load character image sequence and prediction data
     with sequence_path.open(encoding="utf-8") as f:
         sequence = json.load(f)
-
     with word_recognition_path.open(encoding="utf-8") as f:
         predictions = json.load(f)
 
-    # Get dimensions from first character image
+    # Determine image size by loading the first character image
     first_img = Image.open(data_dir / sequence[0]["img"])
     char_width, char_height = first_img.size
 
-    # Layout settings
-    spacing = 10
-    margin = 20
+    # Layout configuration
+    spacing = 10  # Horizontal space between character images
+    margin = 20  # Margin around content
     font_size = 18
-    max_chars_per_row = 20
     font = load_chinese_font(font_size)
+    legend_line_height = font_size + 6  # Spacing between legend lines
 
-    # Compute image dimensions
-    num_rows = (len(sequence) + max_chars_per_row - 1) // max_chars_per_row
-    total_width = max_chars_per_row * (char_width + spacing) + 2 * margin
-    total_height = num_rows * (char_height + 100) + margin
+    max_chars_per_row = len(sequence)  # Force all characters into one row
+    chars_per_page = len(sequence)  # Entire sequence fits on one "virtual" page
 
-    # Create the base PDF image
-    pdf_img = Image.new("RGB", (total_width, total_height), "white")
-    draw = ImageDraw.Draw(pdf_img)
+    pages = []  # Holds each image page that will be saved into PDF
+    total_chars = len(sequence)
+    total_pages = (total_chars + chars_per_page - 1) // chars_per_page  # Usually 1
 
-    # Draw character images and their OCR labels
-    positions = []  # track where each character is placed
-    for idx, entry in enumerate(sequence):
-        row = idx // max_chars_per_row
-        col = idx % max_chars_per_row
+    # Iterate through each "page" of characters (usually one)
+    for page_index in range(total_pages):
+        char_start_idx = page_index * chars_per_page
+        char_end_idx = min(char_start_idx + chars_per_page, total_chars)
+        page_sequence = sequence[char_start_idx:char_end_idx]
 
-        x = margin + col * (char_width + spacing)
-        y = margin + row * (char_height + 100)
+        # Extract predictions that appear in this page's character range
+        page_predictions = [
+            p for p in predictions if char_start_idx <= p.get("window_ids", [0])[0] < char_end_idx
+        ]
+        legend_height = len(page_predictions) * legend_line_height + 2 * margin
 
-        char_img = Image.open(data_dir / entry["img"])
-        pdf_img.paste(char_img, (x, y))
+        # Compute page dimensions
+        page_width = max_chars_per_row * (char_width + spacing) + 2 * margin
+        page_height = (char_height + 40) + legend_height + 2 * margin
 
-        draw.text((x, y + char_height + 5), entry["ocr"], fill="black", font=font)
-        positions.append((x, y))
-
-    # Draw prediction boxes with confidence labels
-    for pred in predictions:
-        window_ids = pred.get("window_ids", [])
-        if not window_ids:
-            continue  # skip if no span info
-
-        start_idx = window_ids[0]
-        end_idx = window_ids[-1]
-        if start_idx >= len(positions) or end_idx >= len(positions):
-            print(f"[WARN] Skipping: window [{start_idx}, {end_idx}] out of range for {len(positions)} characters.")
-            continue  # out of bounds
-
-        word = pred["output"]["text"]
-        conf = pred["output"]["confidence"]
-
-        # Group character positions by row (y coordinate)
-        from collections import defaultdict
-        row_boxes = defaultdict(list)
-
-        for idx in window_ids:
-            if idx >= len(positions):
-                continue
-            x, y = positions[idx]
-            row_boxes[y].append(x)
-
-        if not row_boxes:
-            continue
-
-        # Get model output info
-        word = pred["output"]["text"]
-        conf = pred["output"]["confidence"]
-        color = get_color_for_confidence(conf)
-
-        # For each row, draw a separate box
-        for row_y, x_list in row_boxes.items():
-            x0 = min(x_list)
-            x1 = max(x_list) + char_width
-            box_y0 = row_y
-            box_y1 = row_y + char_height
-
-            draw.rectangle([x0, box_y0, x1, box_y1], outline=color, width=3)
-            # Only draw the label once (above the first box)
-            if row_y == min(row_boxes.keys()):
-                label = f"{word} ({conf:.2f})"
-                draw.text((x0, box_y0 - font_size - 5), label, fill=color, font=font)
-
-
-
-        if x1 <= x0:
-            print(f"[WARN] Skipping invalid box: x0={x0}, x1={x1}, word='{word}'")
-            continue  # skip degenerate box
-
-        color = get_color_for_confidence(conf)
-        # Draw filled background with low opacity using RGBA mode
-        fill_color = {
-            "red": (255, 0, 0, 50),
-            "orange": (255, 165, 0, 50),
-            "green": (0, 128, 0, 50)
-        }.get(color, (0, 0, 0, 50))
-
-        # Draw filled rectangle on overlay
-        overlay = Image.new("RGBA", pdf_img.size, (255, 255, 255, 0))
-        overlay_draw = ImageDraw.Draw(overlay)
-        overlay_draw.rectangle([x0, box_y0, x1, box_y1], fill=fill_color)
-
-        # Combine overlay with base image
-        pdf_img = Image.alpha_composite(pdf_img.convert("RGBA"), overlay).convert("RGB")
-
-        # Then draw border
+        # Create blank image canvas for the page
+        pdf_img = Image.new("RGBA", (page_width, page_height), (255, 255, 255, 255))
         draw = ImageDraw.Draw(pdf_img)
-        draw.rectangle([x0, box_y0, x1, box_y1], outline=color, width=3)
+        positions = []  # To store (x, y) of each character
 
+        # Draw character images and corresponding OCR text
+        for i, entry in enumerate(page_sequence):
+            col = i % max_chars_per_row
+            x = margin + col * (char_width + spacing)
+            y = margin
+            char_img = Image.open(data_dir / entry["img"])
+            pdf_img.paste(char_img, (x, y))
+            draw.text((x, y + char_height + 2), entry["ocr"], fill="black", font=font)
+            positions.append((x, y))
 
-        label = f"{word} ({conf:.2f})"
-        draw.text((x0, box_y0 - font_size - 5), label, fill=color, font=font)
+        legend_entries = []  # To collect data for the legend
+        alt = True  # Flag for alternating top/bottom label placement
 
-    # Save final image as PDF
+        # Draw bounding boxes and collect legend information
+        for i, pred in enumerate(page_predictions):
+            window_ids = pred.get("window_ids", [])
+            if not window_ids:
+                continue
+
+            # Get indices relative to current page
+            local_indices = [idx - char_start_idx for idx in window_ids if char_start_idx <= idx < char_end_idx]
+            if not local_indices or any(idx >= len(positions) for idx in local_indices):
+                continue
+
+            # Skip predictions that span multiple rows (not expected in single-row layout)
+            row_numbers = set(idx // max_chars_per_row for idx in local_indices)
+            if len(row_numbers) > 1:
+                continue
+
+            # Calculate bounding box for prediction
+            xs = [positions[idx][0] for idx in local_indices]
+            ys = [positions[idx][1] for idx in local_indices]
+            x0 = min(xs)
+            x1 = max(xs) + char_width
+            y0 = ys[0]
+
+            conf = pred["output"].get("confidence", 0.0)
+            color = get_confidence_color(conf)
+
+            # Calculate box vertical position depending on alternation
+            offset = 5
+            y_top = y0 - offset if alt else y0
+            y_bottom = y0 + char_height + (offset if not alt else 0)
+
+            draw.rectangle([x0, y_top, x1, y_bottom], outline=color, width=2)  # Draw the box
+            draw.text((x0 + 3, y_top + 2 if alt else y_bottom - font_size - 2), f"{i+1:02d}", fill=color, font=font)
+
+            alt = not alt  # Flip alternation for next box
+
+            # Add legend entry
+            word = pred["output"].get("text", "")
+            legend_entries.append((i + 1, word, window_ids[0], conf, color))
+
+        # Draw legend below character row
+        legend_y = page_height - legend_height + 10
+        for j, (num, word, start, conf, color) in enumerate(legend_entries):
+            label = f"{num:02d}. {word} (start={start}, conf={conf:.2f})"
+            draw.text((margin, legend_y + j * legend_line_height), label, fill=color, font=font)
+
+        # Layout slicing logic — splits wide rows into segments if too long
+        image_row_height = char_height + 40 + margin
+        full_char_width = char_width + spacing
+        chars_per_slice = 20  # Number of characters per horizontal slice
+        slice_width = chars_per_slice * full_char_width
+        page_height = image_row_height + legend_height + margin
+        num_slices = (len(page_sequence) + chars_per_slice - 1) // chars_per_slice
+
+        for i in range(num_slices):
+            # Calculate crop box
+            x0 = margin + i * slice_width
+            x1 = x0 + slice_width - spacing
+
+            # Crop upper image row
+            img_crop = pdf_img.crop((x0, 0, x1, image_row_height))
+
+            # Crop full legend
+            legend_crop = pdf_img.crop((0, image_row_height, pdf_img.width, pdf_img.height))
+
+            # Create final composed page
+            page = Image.new("RGB", (slice_width, page_height), "white")
+            page.paste(img_crop, (0, 0))
+            page.paste(legend_crop, (0, image_row_height))
+            pages.append(page)
+
+    # Save all image pages into a single PDF
     output_path = Path(output_dir) / "output.pdf"
-    pdf_img.save(output_path, "PDF", resolution=100.0)
+    pages[0].save(output_path, save_all=True, append_images=pages[1:], format="PDF", resolution=100.0)
+
     return str(output_path)
 
-if __name__ == "__main__":
-    import argparse
 
-    parser = argparse.ArgumentParser(description="Generate annotated PDF from OCR and word recognition output.")
+if __name__ == "__main__":
+    # Handle CLI execution
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Generate annotated PDF from OCR and word recognition output."
+    )
     parser.add_argument(
         "--output_dir",
         type=str,
@@ -203,6 +232,5 @@ if __name__ == "__main__":
         help="Directory where the output PDF will be saved."
     )
     args = parser.parse_args()
-
     pdf_path = run(args.output_dir)
     print(f"PDF saved to: {pdf_path}")

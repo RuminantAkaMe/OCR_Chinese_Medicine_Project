@@ -76,6 +76,7 @@ def run_sliding_inference(window_size: int, step: int = 1):
                     window_output = json.load(f)
                 output_full.append({
                     "start_index": index,
+                    "window_ids": [e["id"] for e in window_seq],
                     "output": window_output
                 })
             except Exception as e:

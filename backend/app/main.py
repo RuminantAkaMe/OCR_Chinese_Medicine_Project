@@ -240,7 +240,7 @@ async def recognize_words():
 
 
 # =========================
-# 📄 Create searchable PDF
+# 📄 Create readable PDF
 # =========================
 @app.post("/api/create-pdf")
 async def create_pdf():

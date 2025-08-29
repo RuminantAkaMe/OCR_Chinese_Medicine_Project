@@ -86,8 +86,14 @@ from PIL import Image
 # Resolve paths in a cross-platform way (Windows/Linux) using pathlib.
 # BASE_DIR is the project base for word_recognition_src (…/word_recognition_src).
 BASE_DIR = Path(__file__).resolve().parent.parent
-# Where to save evaluation artifacts (per fold when run via kfold).
-OUTPUT_DIR = BASE_DIR / "data" / "eval_out"
+# If called via kfold, CWD is .../checkpoints_cv/foldX/
+# -> write into .../word_recognition_src/data/eval_out/foldX
+# Else (standalone), write into .../word_recognition_src/data/eval_out
+cwd = Path.cwd()
+if (cwd / "checkpoints").exists() and cwd.name.startswith("fold"):
+    OUTPUT_DIR = BASE_DIR / "data" / "eval_out" / cwd.name
+else:
+    OUTPUT_DIR = BASE_DIR / "data" / "eval_out"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 # DATA_PATH: prefer the script-relative path (standalone),
 # but also works when launched from kfold (same relative layout).

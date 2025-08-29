@@ -78,59 +78,70 @@ def preprocess(example, processor):
         conf = token.get("ocr_confidence", None)
         ocr_sequence.append(f"{char}({conf:.2f})" if conf is not None else char)
 
+    # Build a readable OCR prompt (just for the user text part).
     ocr_prompt = " ".join(ocr_sequence)
 
-    # Prepare the message structure for the model
-    messages = [{
+    # Ground-truth JSON we want the model to generate as the assistant reply.
+    output_json = json.dumps(example["output"], ensure_ascii=False)
+
+    # 1) USER-ONLY messages (for measuring the prompt length).
+    messages_prompt = [{
         "role": "user",
         "content": (
-            [{"type": "image", "image": img} for img in images] +
+            [{"type": "image", "image": img} for img in images] +  # all input images
             [{"type": "text", "text": f"请根据这些图像（{ocr_prompt}）组成一个词语，并给出 JSON 格式的候选词及其范围。"}]
         )
     }]
 
-    # Apply the processor's chat template to format the messages for the model
-    # Returning tensors here ensures pixel values and image sizes are computed
-    # exactly as expected by the model's vision tower.
-    encoding = processor.apply_chat_template(
-        messages,
-        add_generation_prompt=True,
+    # 2) FULL conversation = USER + ASSISTANT(target JSON).
+    messages_full = messages_prompt + [{
+        "role": "assistant",
+        "content": [
+            {"type": "text", "text": output_json}
+        ]
+    }]
+
+    # Encode the USER-ONLY prompt with a generation tag to get its token length.
+    enc_prompt = processor.apply_chat_template(
+        messages_prompt,
+        add_generation_prompt=True,   # add assistant-begin tag at the end of the prompt
         tokenize=True,
         return_dict=True,
-        return_tensors="pt",
+        return_tensors="pt"
     )
 
-    input_ids = encoding["input_ids"].view(-1)
+    # Encode the FULL conversation; these tokens are fed to the model during training.
+    enc_full = processor.apply_chat_template(
+        messages_full,
+        add_generation_prompt=False,  # assistant answer is already included
+        tokenize=True,
+        return_dict=True,
+        return_tensors="pt"
+    )
 
+    # Inputs the model will see.
+    input_ids = enc_full["input_ids"].squeeze(0)
+    attention_mask = enc_full["attention_mask"].squeeze(0)
 
-    # Prepare the output labels by encoding them
-    output_json = json.dumps(example["output"], ensure_ascii=False)
-    output_ids = processor.tokenizer(
-        output_json,
-        return_tensors="pt",
-        padding="max_length",
-        truncation=True,
-        max_length=256
-    )["input_ids"].squeeze(0)
-    if output_ids.dim() > 1:
-        output_ids = output_ids.view(-1)
+    # Labels must match input_ids shape. We mask the entire prompt (user side) to -100
+    # so loss is computed only on the assistant part (the target JSON).
+    labels = input_ids.clone()
+    prompt_len = enc_prompt["input_ids"].shape[-1]  # token length up to (and including) assistant-begin
+    labels[:prompt_len] = -100
 
-    # Concatenate the input and output IDs, truncate to a maximum length of 512
-    labels = torch.cat([input_ids, output_ids], dim=0)[:512]
-    attention_mask = torch.ones_like(input_ids)
+    # NOTE: The old block that tokenized `output_json` into `output_ids` is no longer needed.
+    # We already embedded the assistant target inside `messages_full` and masked labels correctly.
 
-    # Manually process the images so we can record the exact tensor shapes
-    # used during training. This ensures the patch counts match the model's
-    # vision tower expectations.
+    # Manually process images to get pixel tensors in the exact format the vision tower expects.
     image_tensors = []
     image_sizes = []
     for img in images:
         processed = processor.image_processor(img, return_tensors="pt")
-        tensor = processed["pixel_values"].squeeze(0)
+        tensor = processed["pixel_values"].squeeze(0)   # (C, H, W)
         image_tensors.append(tensor)
-        # record the tensor height/width after processing
-        image_sizes.append(list(tensor.shape[-2:]))
+        image_sizes.append(list(tensor.shape[-2:]))     # record (H, W) after processing
 
+    # Stack all image tensors of this sample; collator will handle batching.
     pixel_values = torch.stack(image_tensors)
 
     return {

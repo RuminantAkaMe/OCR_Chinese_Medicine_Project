@@ -97,7 +97,7 @@ else:
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 # DATA_PATH: prefer the script-relative path (standalone),
 # but also works when launched from kfold (same relative layout).
-DATA_PATH = BASE_DIR / "data" / "train.jsonl"
+DATA_PATH = cwd / "data" / "train.jsonl"
 
 # MODEL_DIR: prefer the fold-local ./checkpoints (when run via kfold, CWD=foldX),
 # otherwise fall back to script-relative …/word_recognition_src/checkpoints.

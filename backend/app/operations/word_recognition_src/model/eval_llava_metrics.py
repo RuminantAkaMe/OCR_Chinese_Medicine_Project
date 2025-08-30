@@ -110,7 +110,8 @@ else:
 # NOTE:
 # - Always pass MODEL_DIR as a string to PeftModel.from_pretrained(...): str(MODEL_DIR)
 # - pathlib handles Windows/Linux path separators internally; no manual os.path needed.
-
+# For HPC Usage:
+# MODEL_BASE = str(Path(__file__).resolve().parent.parent / "model" / "llava-onevision-qwen2-0.5b-ov-hf")
 MODEL_BASE = "E:/Software-Projekte/Llava/llava-onevision-qwen2-0.5b-ov-hf"
 TOP_K      = [1, 5]
 ECE_BINS   = 10

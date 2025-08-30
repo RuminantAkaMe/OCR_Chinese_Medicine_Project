@@ -15,6 +15,8 @@ import json
 
 # === Model and processor configuration ===
 # Define the path to the pre-trained model you will be fine-tuning
+# Path for HPC:
+# MODEL_PATH = str(Path(__file__).resolve().parent.parent / "model" / "llava-onevision-qwen2-0.5b-ov-hf")
 MODEL_PATH = "E:/Software-Projekte/Llava/llava-onevision-qwen2-0.5b-ov-hf"
 
 # Configure quantization for the model using Bits and Bytes (bnb) for efficient memory use
@@ -66,7 +68,8 @@ def preprocess(example, processor):
     """
     images = []
     ocr_sequence = []
-
+    #print(">>> running train_llava from", __file__)
+    
     # Process each token in the input to load the corresponding image and OCR data
     for token in example["input"]:
         img_path = Path(__file__).parent.parent / token["img"]
@@ -101,6 +104,15 @@ def preprocess(example, processor):
         ]
     }]
 
+    # Manually process images to get pixel tensors in the exact format the vision tower expects.
+    image_tensors = []
+    image_sizes = []
+    for img in images:
+        processed = processor.image_processor(img, return_tensors="pt")
+        tensor = processed["pixel_values"].squeeze(0)   # (C, H, W)
+        image_tensors.append(tensor)
+        image_sizes.append(list(tensor.shape[-2:]))     # record (H, W) after processing
+
     # Encode the USER-ONLY prompt with a generation tag to get its token length.
     enc_prompt = processor.apply_chat_template(
         messages_prompt,
@@ -127,22 +139,19 @@ def preprocess(example, processor):
     # so loss is computed only on the assistant part (the target JSON).
     labels = input_ids.clone()
     prompt_len = enc_prompt["input_ids"].shape[-1]  # token length up to (and including) assistant-begin
-    labels[:prompt_len] = -100
-
-    # NOTE: The old block that tokenized `output_json` into `output_ids` is no longer needed.
-    # We already embedded the assistant target inside `messages_full` and masked labels correctly.
-
-    # Manually process images to get pixel tensors in the exact format the vision tower expects.
-    image_tensors = []
-    image_sizes = []
-    for img in images:
-        processed = processor.image_processor(img, return_tensors="pt")
-        tensor = processed["pixel_values"].squeeze(0)   # (C, H, W)
-        image_tensors.append(tensor)
-        image_sizes.append(list(tensor.shape[-2:]))     # record (H, W) after processing
+    labels[:prompt_len] = -100 # no loss computation for user input
 
     # Stack all image tensors of this sample; collator will handle batching.
     pixel_values = torch.stack(image_tensors)
+
+    # 1) Wie viele Bilder im Prompt?
+    n_tokens = sum(1 for c in messages_full[0]["content"] if c["type"] == "image")
+
+    # 2) Wie viele Bilder gehen als Features rein?
+    n_feats = pixel_values.shape[0]  # nach torch.stack: (num_images, C, H, W)
+
+    assert n_tokens == len(images) == n_feats, \
+        f"Mismatch: tokens={n_tokens}, images={len(images)}, features_images={n_feats}"
 
     return {
         "input_ids": input_ids,
@@ -219,9 +228,12 @@ def main():
     model = LlavaOnevisionForConditionalGeneration.from_pretrained(
         MODEL_PATH,
         device_map="auto",
-        torch_dtype=torch.float32,
+        torch_dtype=torch.bfloat16,
         quantization_config=bnb_config
     )
+    model.config.use_cache = False
+    model.enable_input_require_grads()
+    model.gradient_checkpointing_enable()
     model = get_peft_model(model, peft_config) # Apply LoRA to the model
 
     # Load and preprocess the dataset
@@ -239,7 +251,10 @@ def main():
         logging_dir="./logs", # Directory to store logs
         logging_steps=10, # Log training progress every 10 steps
         save_strategy="epoch", # Save the model checkpoint at the end of each epoch
-        fp16=False # Whether to use 16-bit precision (disabled here for stability)
+        bf16 = True,  # oder fp16=True wenn keine bf16-Unterstützung
+        gradient_checkpointing = True,
+        optim = "paged_adamw_8bit",
+        remove_unused_columns = False,
     )
 
     # Initialize the Trainer class with the model, arguments, dataset, and collator

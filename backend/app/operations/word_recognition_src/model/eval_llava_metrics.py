@@ -150,7 +150,7 @@ else:
     print("No LoRA adapter found; evaluating base model only.")
     model = base_model
 
-model.eval()
+model.eval() # turns model to eval mode --> no dropout etc.
 
 
 # -------------------- IO helpers --------------------
@@ -308,6 +308,7 @@ def topk_em(y_true: List[str], ranked_cands: List[List[Tuple[str, float]]], k: i
     return hits / max(1, len(y_true))
 # Top-K ---------------------------
 
+# Notice: This metric is most likely useless
 def seq_acc_k(y_true: List[str], ranked_cands: List[List[Tuple[str, float]]], k: int) -> float:
     # With one target per sequence, SeqAcc@k == EM@k.
     return topk_em(y_true, ranked_cands, k)
@@ -456,7 +457,13 @@ def evaluate():
     span_f1 = span_f1_macro(true_spans_all, pred_spans_all)
     print(f"Span F1 (exact span-pair, macro): {span_f1:.4f}")
 
-    correctness = np.array([int(t == p) for t, p in zip(y_true, best_preds)], dtype=float)
+    # Total 1:1 Correctness:
+    # correctness = np.array([int(t == p) for t, p in zip(y_true, best_preds)], dtype=float)
+    correctness = np.array(
+    # Relative Correctness in accordance to Exact Match Calculation
+        [1.0 if _matches_as_standalone(t, p) else 0.0 for t, p in zip(y_true, best_preds)],
+        dtype=float
+    )
     confidences = np.clip(np.array(best_confidences, dtype=float), 0.0, 1.0)
     ece = ece_binned(confidences, correctness, n_bins=ECE_BINS)
     print(f"Expected Calibration Error (ECE, {ECE_BINS} bins): {ece:.4f}")

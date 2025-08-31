@@ -71,7 +71,7 @@ def preprocess(example, processor):
     #print(">>> running train_llava from", __file__)
     
     # Process each token in the input to load the corresponding image and OCR data
-    for token in example["input"]:
+    for i, token in enumerate(example["input"]):
         img_path = Path(__file__).parent.parent / token["img"]
         image = Image.open(img_path).convert("RGB")
         images.append(image)
@@ -79,7 +79,10 @@ def preprocess(example, processor):
         # Build the OCR sequence string
         char = token["ocr"]
         conf = token.get("ocr_confidence", None)
-        ocr_sequence.append(f"{char}({conf:.2f})" if conf is not None else char)
+        if conf is not None:
+            ocr_sequence.append(f"{i}: {char}({conf:.2f})")
+        else:
+            ocr_sequence.append(f"{i}: {char}")
 
     # Build a readable OCR prompt (just for the user text part).
     ocr_prompt = " ".join(ocr_sequence)

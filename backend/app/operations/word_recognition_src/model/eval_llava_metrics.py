@@ -162,10 +162,10 @@ def load_data(path: Path) -> List[Dict[str, Any]]:
 def build_inputs(example: Dict[str, Any]) -> Dict[str, torch.Tensor]:
     """Builds inputs exactly like training: PIL images + OCR prompt via chat template."""
     imgs, ocrs = [], []
-    for tok in example["input"]:
+    for i, tok in enumerate(example["input"]):
         img_path = Path(__file__).parent.parent / tok["img"]
         imgs.append(Image.open(img_path).convert("RGB"))
-        ocrs.append(tok["ocr"])
+        ocrs.append(f"{i}: {tok['ocr']}")
     prompt = " ".join(ocrs)
     messages = [{
         "role": "user",
@@ -477,9 +477,10 @@ def evaluate():
     seqk_vals = {f"seqacc@{k}": seq_acc_k(y_true, ranked_cands_per_ex, k) for k in TOP_K}
 
     # Confidence stats
-    mean_conf = float(confidences.mean()) if len(confidences) else 0.0
-    mean_conf_correct = float(confidences[correctness == 1].mean()) if (correctness == 1).any() else None
-    mean_conf_wrong   = float(confidences[correctness == 0].mean()) if (correctness == 0).any() else None
+    
+    mean_conf = float(confidences.mean()) if len(confidences) else 0.0 # Durchschnitt aller Confidences (über alle Samples).
+    mean_conf_correct = float(confidences[correctness == 1].mean()) if (correctness == 1).any() else None # Durchschnitt der Confidences nur bei korrekten Vorhersagen.
+    mean_conf_wrong   = float(confidences[correctness == 0].mean()) if (correctness == 0).any() else None # Durchschnitt der Confidences nur bei falschen Vorhersagen.
 
     # 1) summary.json
     summary = {

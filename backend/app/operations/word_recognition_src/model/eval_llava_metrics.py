@@ -1,5 +1,6 @@
 # in bash call: python backend/app/operations/word_recognition_src/model/eval_llava_metrics.py
 # DONT FORGET to activate your python environment: source backend/.venv310/Scripts/activate
+# If you want to call the script independently put the train.jsonl in root /data folder
 # eval_llava_metrics.py
 """
 Evaluation script aligned with the papers definitions.
@@ -165,7 +166,19 @@ def build_inputs(example: Dict[str, Any]) -> Dict[str, torch.Tensor]:
     for i, tok in enumerate(example["input"]):
         img_path = Path(__file__).parent.parent / tok["img"]
         imgs.append(Image.open(img_path).convert("RGB"))
-        ocrs.append(f"{i}: {tok['ocr']}")
+
+        char = tok.get("ocr", None)
+        conf = tok.get("ocr_confidence", None)
+
+        if char is not None and str(char).strip():
+            if conf is not None:
+                ocrs.append(f"{i}: {char}({conf:.2f})")
+            else:
+                ocrs.append(f"{i}: {char}")
+        else:
+            # no OCR
+            ocrs.append(f"{i}: ")
+
     prompt = " ".join(ocrs)
     messages = [{
         "role": "user",

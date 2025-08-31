@@ -1,7 +1,7 @@
 # to train call in bash: $ python backend/app/operations/word_recognition_src/model/train_llava.py
 # DONT FORGET to activate your python environment: source backend/.venv310/Scripts/activate
 # image size must be divisable by 14
-
+# if train_llava is called independently, checkpoint are store in root /checkpoints
 # train_llava.py
 
 from transformers import LlavaOnevisionForConditionalGeneration, AutoProcessor, TrainingArguments, Trainer
@@ -76,13 +76,18 @@ def preprocess(example, processor):
         image = Image.open(img_path).convert("RGB")
         images.append(image)
 
-        # Build the OCR sequence string
-        char = token["ocr"]
+        # Build the OCR sequence string (robust)
+        char = token.get("ocr", None)
         conf = token.get("ocr_confidence", None)
-        if conf is not None:
-            ocr_sequence.append(f"{i}: {char}({conf:.2f})")
+
+        if char is not None and str(char).strip():
+            if conf is not None:
+                ocr_sequence.append(f"{i}: {char}({conf:.2f})")
+            else:
+                ocr_sequence.append(f"{i}: {char}")
         else:
-            ocr_sequence.append(f"{i}: {char}")
+            # Wenn OCR fehlt
+            ocr_sequence.append(f"{i}: ")
 
     # Build a readable OCR prompt (just for the user text part).
     ocr_prompt = " ".join(ocr_sequence)

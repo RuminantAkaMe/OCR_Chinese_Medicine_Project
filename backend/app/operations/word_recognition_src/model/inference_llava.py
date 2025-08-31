@@ -37,13 +37,17 @@ def generate_candidates_with_confidence(model, processor, input_sequence, max_ne
         image = Image.open(img_path).convert("RGB")
         images.append(image)
 
-        char = token["ocr"]
-        # Optional: include OCR confidence in prompt
+        char = token.get("ocr", None)
         conf = token.get("ocr_confidence", None)
-        if conf is not None:
-            ocr_sequence.append(f"{i}: {char}({conf:.2f})")
+
+        if char is not None and str(char).strip():
+            if conf is not None:
+                ocr_sequence.append(f"{i}: {char}({conf:.2f})")
+            else:
+                ocr_sequence.append(f"{i}: {char}")
         else:
-            ocr_sequence.append(f"{i}: {char}")
+            # no OCR
+            ocr_sequence.append(f"{i}: ")
 
     # Construct multimodal prompt: alternating OCR text and images
     content = []

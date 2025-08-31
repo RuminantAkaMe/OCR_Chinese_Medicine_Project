@@ -113,6 +113,7 @@ def run_fold(fold: int, train_file: Path, val_file: Path):
     shutil.copyfile(train_file, target_train)
 
     # 2) Train (run in fold_dir so "./checkpoints" & "./logs" are per-fold)
+    # For only Validation, comment out this line:
     subprocess.run([sys.executable, str(Path(__file__).parent / "train_llava.py")], cwd=fold_dir, check=True)
 
     # 3) Eval: eval_llava_metrics.py looks at "./data/train.jsonl" relative to Current Working Directory.

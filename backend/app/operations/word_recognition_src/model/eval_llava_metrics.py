@@ -81,6 +81,7 @@ from torch.nn.functional import log_softmax
 from transformers import AutoProcessor, LlavaOnevisionForConditionalGeneration
 from peft import PeftModel
 from PIL import Image
+import re
 
 # -------------------- Config --------------------
 # Resolve paths in a cross-platform way (Windows/Linux) using pathlib.
@@ -265,34 +266,90 @@ def fallback_candidates(enc: Dict[str, torch.Tensor], k: int) -> List[Tuple[str,
 
 
 # -------------------- Metrics --------------------
+
+# Top-K ---------------------------
+def _normalize(s: str) -> str:
+    # trim + einfache Präfixe entfernen + äußere Quotes weg
+    s = s.strip()
+    s = re.sub(r'^\s*(?:text|best|pred|label)\s*:\s*', '', s, flags=re.IGNORECASE)
+    s = s.strip()
+    if len(s) >= 2 and ((s[0] == s[-1] == '"') or (s[0] == s[-1] == "'")):
+        s = s[1:-1].strip()
+    return s
+
+def _matches_as_standalone(gold: str, pred: str) -> bool:
+    gold = gold.strip()
+    pred_norm = _normalize(pred)
+
+    # 1) Exakt gleich nach Normalisierung
+    if pred_norm == gold:
+        return True
+
+    # 2) Exakt in Anführungszeichen als Value enthalten (JSON-/KV-ähnlich)
+    #    z. B. ... "abc" ... oder ...: "abc"
+    quoted_exact = re.compile(r'["\']{}\b["\']'.format(re.escape(gold)))
+    if quoted_exact.search(pred):
+        return True
+
+    # 3) Als eigenständiges Token mit Wortgrenzen, NICHT Teil eines längeren Wortes
+    #    (?<!\w) gold (?!\w) verhindert Matches wie "abcd"
+    standalone = re.compile(r'(?<!\w){}(?!\w)'.format(re.escape(gold)))
+    if standalone.search(pred):
+        return True
+
+    return False
+
 def topk_em(y_true: List[str], ranked_cands: List[List[Tuple[str, float]]], k: int) -> float:
     hits = 0
     for t, cand_list in zip(y_true, ranked_cands):
         texts = [c[0] for c in cand_list[:min(k, len(cand_list))]]
-        hits += int(t in texts)
+        hit = any(_matches_as_standalone(t, text) for text in texts)
+        hits += int(hit)
     return hits / max(1, len(y_true))
-
+# Top-K ---------------------------
 
 def seq_acc_k(y_true: List[str], ranked_cands: List[List[Tuple[str, float]]], k: int) -> float:
     # With one target per sequence, SeqAcc@k == EM@k.
     return topk_em(y_true, ranked_cands, k)
 
+# Span F1 ---------------------------
+def _normalize_span(span) -> Tuple[int, int]:
+    """
+    Normalisiert einen Span-Eintrag in ein (start, end) Tuple aus ints.
+    Ignoriert unterschiedliche Schreibweisen (Liste, Tuple, Strings mit Leerzeichen).
+    """
+    if isinstance(span, (list, tuple)) and len(span) == 2:
+        return (int(span[0]), int(span[1]))
+    # Falls z.B. "0,2" als String kommt → splitten
+    if isinstance(span, str) and "," in span:
+        parts = span.replace("(", "").replace(")", "").split(",")
+        if len(parts) == 2 and all(p.strip().isdigit() for p in parts):
+            return (int(parts[0]), int(parts[1]))
+    return None  # ungültig → wird ignoriert
 
 def span_f1_macro(true_spans: List[List[Tuple[int, int]]],
                   pred_spans: List[List[Tuple[int, int]]]) -> float:
+    """
+    Berechnet Macro-F1 über alle Beispiele.
+    Ein Span gilt als Treffer nur, wenn Start- und Endindex genau übereinstimmen.
+    """
     f1s = []
     for ts, ps in zip(true_spans, pred_spans):
-        S = set(map(tuple, ts))
-        P = set(map(tuple, ps))
-        tp = len(S & P)
-        fp = len(P - S)
-        fn = len(S - P)
+        # Normalisiere alle Spans, entferne None
+        S = {s for s in map(_normalize_span, ts) if s is not None}
+        P = {p for p in map(_normalize_span, ps) if p is not None}
+
+        tp = len(S & P)         # richtige Spans
+        fp = len(P - S)         # zu viel vorhergesagt
+        fn = len(S - P)         # zu wenig vorhergesagt
+
         prec = tp / (tp + fp) if (tp + fp) > 0 else 0.0
         rec  = tp / (tp + fn) if (tp + fn) > 0 else 0.0
         f1   = (2 * prec * rec / (prec + rec)) if (prec + rec) > 0 else 0.0
         f1s.append(f1)
-    return float(np.mean(f1s) if f1s else 0.0)
 
+    return float(np.mean(f1s) if f1s else 0.0)
+# Span F1 ---------------------------
 
 def ece_binned(confidences: np.ndarray, correctness: np.ndarray, n_bins: int = 10) -> float:
     """Binned ECE as in the paper."""

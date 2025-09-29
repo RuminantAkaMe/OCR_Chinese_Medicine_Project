@@ -46,6 +46,8 @@ OCR_Chinese_Medicine_Project
 │   └── uploaded_files     # Temporary storage for uploaded/processed files
 └── README.md              # This document
 
+```
+
 ## 🛠️ Setup
 
 ⚙️ Setup-Instructions (In a git bash)
@@ -59,14 +61,17 @@ Git
 
 🖼 start frontend
 --------------------------------------------
+```plaintext
 cd frontend
 npm install
 npm run dev
+```
 --------------------------------------------
 
 🔧 Setup backend
   Notice: Individual evironments are used for each processing stage!
 --------------------------------------------
+```plaintext
 cd backend
 python -m venv venv
 venv/Scripts/activate           # Windows
@@ -74,6 +79,7 @@ venv/Scripts/activate           # Windows
 
 pip install -r requirements.txt
 uvicorn app.main:app --reload
+```
 --------------------------------------------
 
 
@@ -82,7 +88,7 @@ uvicorn app.main:app --reload
 .gitignore should make sure that these folders arent tracked:
 --------------------------------------------
 gitignore
-
+```plaintext
 # Backend
 .venv310/
 venv/
@@ -101,23 +107,24 @@ dist/
 # Allgemein
 *.log
 .DS_Store
+```
 --------------------------------------------
 
 ## 🛠️ General Tips:
 
-Character Detection:
+# Character Detection:
 
   For additional Info, see the individual files documentation.
 
-Character Segmentation:
+# Character Segmentation:
 
   For additional Info, see the individual files documentation.
 
-Character Recognition:
+# Character Recognition:
 
   For additional Info, see the individual files documentation.
 
-Word Recognition:
+# Word Recognition:
   For Inference, you have to have your llava-onevision-qwen2-0.5b-ov-hf model in PATH,
   and change the MODEL_PATH in inference_llava.py to this PATH.
   Also, make use of checkpoints, you have to store the data of a checkpoint 

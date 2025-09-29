@@ -1,6 +1,8 @@
 # in bash call: python backend/app/operations/word_recognition_src/model/eval_llava_metrics.py
 # DONT FORGET to activate your python environment: source backend/.venv310/Scripts/activate
 # If you want to call the script independently put the train.jsonl in root /data folder
+#   So in standalone, a train.jsonl must be in OCR_Chinese_Medicine_Project/data/train.jsonl
+#   And the checkpoint must be at OCR_Chinese_Medicine_Project/checkpoints/checkpoint-XX
 # eval_llava_metrics.py
 """
 Evaluation script aligned with the papers definitions.

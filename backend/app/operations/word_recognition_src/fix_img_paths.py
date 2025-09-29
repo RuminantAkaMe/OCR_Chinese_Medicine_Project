@@ -1,11 +1,13 @@
 # in bash call: python backend/app/operations/word_recognition_src/fix_img_paths.py
 # DONT FORGET to activate your python environment: source backend/.venv310/Scripts/activate
 # continuation of convert_trainingset.py, put the files in the rootfolder where this script is called from
+# 2. Script in dataset adjustment process
+# TYPE IN NAME IN PARAMETERS OF FUNCTION
 # fix_img_paths.py
 import json
 from pathlib import Path
 
-def fix_paths(in_file="page19_train.jsonl", out_file="page19_train_fixed.jsonl", zero_pad=3):
+def fix_paths(in_file="page6_train.jsonl", out_file="page6_train_fixed.jsonl", zero_pad=3):
     """
     Fix image paths inside a JSONL training dataset.
 

@@ -5,6 +5,9 @@ __pycache__/
 uploaded_files/
 backend/app/operations/word_recognition_src/data/
 checkpoints_cv/
+checkpoints/
+data/
+checkpoint_inference/
 
 # Frontend
 node_modules/

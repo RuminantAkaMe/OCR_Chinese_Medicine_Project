@@ -1,5 +1,6 @@
 # in bash call: python backend/app/operations/word_recognition_src/remove_confidence.py
 # DONT FORGET to activate your python environment: source backend/.venv310/Scripts/activate
+# 4. Script in dataset adjustment process
 # remove_confidence.py
 import json
 from pathlib import Path

@@ -1,6 +1,7 @@
 # in bash call: python backend/app/operations/word_recognition_src/convert_trainingset.py
 # DONT FORGET to activate your python environment: source backend/.venv310/Scripts/activate
 # put the dataset.json in the rootfolder where this script is called from
+# 1. Script in dataset adjustment process
 # convert_trainingset.py
 import json, re
 from pathlib import Path

@@ -1,6 +1,8 @@
 # in bash call: python backend/app/operations/word_recognition_src/fix_paths_unique.py
 # DONT FORGET to activate your python environment: source backend/.venv310/Scripts/activate
 # changes data image paths to make it compatible
+# 3. Script in dataset adjustment process
+# THIS SCRIPT GOES THROUGH THE PAGE FOLDERS IN /DATA AND CHANGES THE train.jsonl
 # fix_paths_unique.py
 
 import json
@@ -14,7 +16,7 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 def fix_file(jsonl_path: Path):
     """
-    Simple script changes the image paths in the *_train.jsonl files to make them complatible my having images stored in pagewise folders.
+    Simple script changes the image paths in the *_train.jsonl files to make them compatible by having images stored in pagewise folders.
     """
     page_name = jsonl_path.parent.name   # z.B. "page15"
     new_records = []

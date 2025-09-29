@@ -1,11 +1,12 @@
 # in bash call: python backend/app/operations/word_recognition_src/make_spans_relative.py
 # DONT FORGET to activate your python environment: source backend/.venv310/Scripts/activate
 # put the files in the rootfolder where this script is called from
+# 5. Script in dataset adjustment process
 # make_spans_relative.py
 import json
 from pathlib import Path
 
-def make_spans_relative(in_file="page19_train.jsonl", out_file="page19_train_rel.jsonl"):
+def make_spans_relative(in_file="page6_train.jsonl", out_file="page6_train_rel.jsonl"):
     """
     Adjust spans in a JSONL training dataset so that they are relative
     to the first input ID in each record.

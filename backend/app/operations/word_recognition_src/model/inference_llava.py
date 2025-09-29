@@ -1,5 +1,6 @@
 # for inference call in bash: $ python backend/app/operations/word_recognition_src/model/inference_llava.py
 # DONT FORGET to activate your python environment: source backend/.venv310/Scripts/activate
+# Checkpoint must be direction in data/checkpoint_inference/
 # inference.py 
 
 import torch
@@ -159,6 +160,15 @@ def main():
         torch_dtype=torch.float16,
         _attn_implementation="eager"
     ).to("cuda")
+
+    base_dir = Path(__file__).parent.parent  # Points to directory containing `data` folder
+    checkpoints_dir = base_dir / "checkpoint_inference"
+    if (checkpoints_dir / "adapter_config.json").exists():
+        from peft import PeftModel
+        print(f"Using LoRA adapter from {checkpoints_dir}")
+        model = PeftModel.from_pretrained(model, str(checkpoints_dir)).to("cuda")
+    else:
+        model = model
 
     '''
     The input sequence for inference.py should be of this form:

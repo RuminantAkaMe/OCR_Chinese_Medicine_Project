@@ -32,8 +32,22 @@ uvicorn app.main:app --reload
 --------------------------------------------
 gitignore
 
+# Backend
+.venv310/
 venv/
+__pycache__/
+uploaded_files/
+backend/app/operations/word_recognition_src/data/
+checkpoints_cv/
+checkpoints/
+data/
+checkpoint_inference/
+
+# Frontend
 node_modules/
 dist/
-uploaded_files/
+
+# Allgemein
+*.log
+.DS_Store
 --------------------------------------------

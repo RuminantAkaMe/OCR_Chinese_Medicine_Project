@@ -158,7 +158,7 @@ def run(pdf_path):
     # Set up all our folders
     temp_images_folder = 'temp_images'  # Where we'll store the PDF pages as images
     results_folder = 'results_7'        # Where the detection results go
-    trained_model_path = 'models/chinese_characters_model3/weights/best.pt'  # Our trained model
+    trained_model_path = 'best.pt'  # Our trained model
     coords_folder = 'coords'            # Where we save the coordinate data
 
     # Step 1: Convert PDF to images

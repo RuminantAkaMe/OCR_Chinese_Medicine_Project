@@ -78,7 +78,9 @@ project_folder/
 ├── evaluate.py
 ├── best.pt
 ├── yolov10n.pt
-└── LabeledImage/
+├── LabeledImage/
+└── Datasets/
+    └── 1800.pdf
 ```
 
 | File/Folder | Description |
@@ -88,10 +90,26 @@ project_folder/
 | `best.pt` | Trained YOLOv10 model weights |
 | `yolov10n.pt` | Base YOLOv10n model (optional or pretrained) |
 | `LabeledImage/` | Folder containing labeled data or test samples |
+| `Datasets/1800.pdf` | Input PDF file for detection |
 
 ---
 
 ## 🚀 Usage
+
+### ⚠️ Before Running
+If you want to run the detection system:  
+1. **Create a folder** named `Datasets` in the project root (if it doesn’t exist).  
+2. **Upload your input PDF** inside the `Datasets` folder.  
+3. **Rename the PDF file to** `1800.pdf`.  
+
+Example:
+```
+project_folder/
+└── Datasets/
+    └── 1800.pdf
+```
+
+---
 
 ### 1. Run Character Detection
 ```bash
@@ -104,7 +122,7 @@ python character_detection.py
 - Detects and groups Chinese characters
 - Saves results with colored bounding boxes
 
-> Input file paths can be configured inside the script.
+> Input file path is fixed as `Datasets/1800.pdf`.
 
 ---
 

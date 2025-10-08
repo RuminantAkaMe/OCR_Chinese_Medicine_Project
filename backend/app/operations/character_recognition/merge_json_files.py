@@ -1,7 +1,6 @@
 import os
 import json
 from glob import glob
-from pathlib import Path
 
 
 def merge_json_files(input_folder, output_file):

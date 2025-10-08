@@ -42,7 +42,7 @@ def process_images():
         merge_flag = True
         if len(sys.argv) > 4:
             m = sys.argv[4].lower()
-            merge_flag = m in ("false", "False", "FALSE")
+            merge_flag = m not in ("false", "0", "no", "off")
 
         Utilities.process_all_images(input_dir, save_img_path, model_name)
 

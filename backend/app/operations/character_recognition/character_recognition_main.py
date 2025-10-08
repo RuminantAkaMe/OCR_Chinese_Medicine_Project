@@ -1,8 +1,11 @@
 from installRequirements import installRequirements
 from utilities import Utilities
-from OCR_Chinese_Medicine_Project.backend.app.operations.character_recognition.dataset_preparation import jsons_to_txt
 import sys
+import os
 
+
+
+_DEFAULT_MODEL_NAME = "PP-OCRv5_server_rec"
 
 def setup_environment():
     """Install required packages."""
@@ -12,32 +15,40 @@ def setup_environment():
         print(f"Error during environment setup: {e}")
 
 
-def process_images(config):
-    """Process images based on the configuration."""
+def process_images():
+    """Process images using only CLI arguments; do not read config.json.
+
+    Expected positional arguments:
+      argv[1] -> input_dir
+      argv[2] -> save_img_path (directory)
+      argv[3] -> save_json_path (optional; file path)
+      argv[4] -> model_name (optional)
+
+    If required args are missing the function will print an error and return.
+    """
     try:
-        input_dir, save_img_path, save_json_path, model_name, _ = Utilities.get_paths_from_config(config)
-        Utilities.process_all_images(input_dir, save_img_path, save_json_path, model_name)
+        if len(sys.argv) < 3:
+            print("Error: this script requires at least two arguments: input_dir and save_img_path")
+            return
+
+        input_dir = sys.argv[1]
+        save_img_path = sys.argv[2]
+        model_name = sys.argv[3] if len(sys.argv) > 3 else _DEFAULT_MODEL_NAME
+
+        Utilities.process_all_images(input_dir, save_img_path, model_name)
     except Exception as e:
         print(f"Error during image processing: {e}")
 
 
-def convert_json_to_txt():
-    """Convert JSON files to a text file."""
-    try:
-        src = sys.argv[1] if len(sys.argv) > 1 else "./"
-        dst = sys.argv[2] if len(sys.argv) > 2 else None
-        keys_to_keep = ["input_path", "rec_text", "rec_score"]
-        jsons_to_txt(src, dst, keep_keys=keys_to_keep)
-    except Exception as e:
-        print(f"Error during JSON to text conversion: {e}")
+
 
 
 def main():
     """Main entry point of the program."""
     try:
-        config = Utilities.load_config()
-        process_images(config)
-        convert_json_to_txt()
+        setup_environment()
+        # Do not load configuration from file; read paths from CLI only
+        process_images()
     except Exception as e:
         print(f"An error occurred in the main program: {e}")
 

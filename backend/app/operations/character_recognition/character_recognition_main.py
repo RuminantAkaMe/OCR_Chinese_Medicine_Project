@@ -1,5 +1,9 @@
 from installRequirements import installRequirements
 from utilities import Utilities
+try:
+    from merge_json_files import merge_json_files
+except Exception:
+    merge_json_files = None
 import sys
 import os
 
@@ -34,8 +38,23 @@ def process_images():
         input_dir = sys.argv[1]
         save_img_path = sys.argv[2]
         model_name = sys.argv[3] if len(sys.argv) > 3 else _DEFAULT_MODEL_NAME
+        # Optional 4th positional arg: merge flag ("true"/"1"/"yes"/"merge")
+        merge_flag = True
+        if len(sys.argv) > 4:
+            m = sys.argv[4].lower()
+            merge_flag = m in ("false", "False", "FALSE")
 
         Utilities.process_all_images(input_dir, save_img_path, model_name)
+
+        if merge_flag:
+            if merge_json_files is None:
+                print("Merge requested but merge_json_files.py is not available.")
+            else:
+                try:
+                    out_path = os.path.join(save_img_path, "character_recognition_results.json")
+                    merge_json_files(save_img_path, out_path)
+                except Exception as e:
+                    print(f"Error during merging JSON files: {e}")
     except Exception as e:
         print(f"Error during image processing: {e}")
 

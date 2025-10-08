@@ -59,9 +59,6 @@ def process_images():
         print(f"Error during image processing: {e}")
 
 
-
-
-
 def main():
     """Main entry point of the program."""
     try:

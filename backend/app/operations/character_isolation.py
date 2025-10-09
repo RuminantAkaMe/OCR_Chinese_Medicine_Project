@@ -3,13 +3,14 @@ import os
 from PIL import Image
 import glob
 
-
+# Directory Configuration
 COORDS_DIR = 'coords'
 RAW_DIR    = 'raw_chars'
 IMAGES_DIR = 'temp_images'
 OUT_DIR    = 'isolated_chars'
 TARGET_SIZE = (64, 64)
 
+# Ensure required directories exist
 os.makedirs(RAW_DIR, exist_ok=True)
 os.makedirs(OUT_DIR, exist_ok=True)
 
@@ -19,16 +20,23 @@ def isolate_chars(images_folder, coords_folder, raw_folder, out_folder, target_s
     os.makedirs(raw_folder, exist_ok=True)
     os.makedirs(out_folder, exist_ok=True)
 
+
+    # Collect all coordinate JSON files (sorted by page number)
     coord_paths = sorted(glob.glob(os.path.join(coords_folder, 'page_*.json')))
     out_files = []
     for coord_path in coord_paths:
         idx = os.path.splitext(os.path.basename(coord_path))[0].split('_')[1]
+
+        # Find corresponding image for this page
         img_path = os.path.join(images_folder, f'page_{idx}.jpg')
         if not os.path.isfile(img_path):
             print(f"[WARN] Missing {img_path}")
             continue
 
+        # Open page image and convert to grayscale
         img = Image.open(img_path).convert('L')
+        
+        # Load bounding boxes (assumed format: [[x1, y1, x2, y2], ...])
         boxes = json.load(open(coord_path))
         for i, (x1, y1, x2, y2) in enumerate(boxes):
             crop = img.crop((x1, y1, x2, y2))
@@ -54,6 +62,7 @@ def run(
 ) -> list[str]:
     return isolate_chars(images_folder, coords_folder, raw_folder, out_folder, target_size)
 
-if __name__ == '__main__':
+# Standalone execution entrypoint
+    if __name__ == '__main__':
     result = isolate_chars(IMAGES_DIR, COORDS_DIR, RAW_DIR, OUT_DIR, TARGET_SIZE)
     print("Standalone run ->", result)

@@ -22,7 +22,7 @@ def run(pdf_path: str) -> str:
     # path to your environment
     env_python = backend_dir / ".venv310" / "Scripts" / "python.exe" 
     # path to your script
-    script = os.path.abspath(operations_dir / "character_detection_src" / "predict.py")
+    script = os.path.abspath(operations_dir / "character_detection_src" / "character_detection.py")
     # start your script in your environment
     # input_path = sys.argv[1]
     # output_path = sys.argv[2]

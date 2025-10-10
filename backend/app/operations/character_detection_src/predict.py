@@ -1,4 +1,5 @@
 import os
+import sys
 import cv2
 import numpy as np
 from ultralytics import YOLO
@@ -154,10 +155,10 @@ def predict(model_path, images_folder, results_folder, coords_folder):
 
         print(f"[INFO] Saved detection result for {img_file} with vertical lines in {results_folder}")
 
-def run(pdf_path):
+def run(pdf_path, output_folder):
     # Set up all our folders
     temp_images_folder = 'temp_images'  # Where we'll store the PDF pages as images
-    results_folder = 'results_7'        # Where the detection results go
+    results_folder = output_folder        # Where the detection results go
     trained_model_path = 'models/chinese_characters_model3/weights/best.pt'  # Our trained model
     coords_folder = 'coords'            # Where we save the coordinate data
 
@@ -192,4 +193,9 @@ def run(pdf_path):
 
 # Run the whole pipeline on our PDF
 if __name__ == "__main__":
-    run('Datasets/1800.pdf')
+    if len(sys.argv) >= 3:
+        pdf_path = sys.argv[1]
+        output_path = sys.argv[2]
+        run(pdf_path, output_path)
+    else:
+        run('Datasets/1800.pdf', 'results_7')

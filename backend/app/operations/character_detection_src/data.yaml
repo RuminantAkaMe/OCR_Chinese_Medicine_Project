@@ -1,0 +1,5 @@
+train: /Users/hardikchauhan/Documents/Hardik/Codes/BioMedYolo10Neww/images/train
+val: /Users/hardikchauhan/Documents/Hardik/Codes/BioMedYolo10Neww/images/val
+
+nc: 1
+names: ['character']

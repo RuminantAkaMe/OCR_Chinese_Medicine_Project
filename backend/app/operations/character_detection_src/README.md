@@ -115,7 +115,7 @@ project_folder/
 
 ### 1. Run Character Detection
 ```bash
-python predict.py
+python character_detection.py
 ```
 
 **What it does:**

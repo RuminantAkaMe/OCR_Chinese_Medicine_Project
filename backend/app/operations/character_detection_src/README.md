@@ -88,6 +88,7 @@ project_folder/
 | `character_detection.py` | Main script for detection (PDF/image input → character bounding boxes) |
 | `evaluate.py` | Evaluates model accuracy (Precision, Recall, F1, mAP, IoU) |
 | `best.pt` | Trained YOLOv10 model weights |
+| `data.yaml` | pre defined file to train YOLOv10 model |
 | `yolov10n.pt` | Base YOLOv10n model (optional or pretrained) |
 | `LabeledImage/` | Folder containing labeled data or test samples |
 | `Datasets/1800.pdf` | Input PDF file for detection if the user has not provided otherwise go with the user provided pdf |

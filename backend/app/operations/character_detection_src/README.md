@@ -79,7 +79,7 @@ project_folder/
 ├── best.pt
 ├── yolov10n.pt
 ├── LabeledImage/
-└── Datasets/
+└── Datasets/  (Optional)
     └── 1800.pdf
 ```
 
@@ -90,13 +90,13 @@ project_folder/
 | `best.pt` | Trained YOLOv10 model weights |
 | `yolov10n.pt` | Base YOLOv10n model (optional or pretrained) |
 | `LabeledImage/` | Folder containing labeled data or test samples |
-| `Datasets/1800.pdf` | Input PDF file for detection |
+| `Datasets/1800.pdf` | Input PDF file for detection if the user has not provided otherwise go with the user provided pdf |
 
 ---
 
 ## 🚀 Usage
 
-### ⚠️ Before Running
+### ⚠️ Before Running( if you want to run this without any website provided PDF)
 If you want to run the detection system:  
 1. **Create a folder** named `Datasets` in the project root (if it doesn’t exist).  
 2. **Upload your input PDF** inside the `Datasets` folder.  

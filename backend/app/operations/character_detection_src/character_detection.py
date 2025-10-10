@@ -160,7 +160,7 @@ def run(pdf_path, output_folder):
     temp_images_folder = 'temp_images'  # Where we'll store the PDF pages as images
     results_folder = output_folder        # Where the detection results go
     trained_model_path = 'best.pt'  # Our trained model
-    coords_folder = 'coords'            # Where we save the coordinate data
+    coords_folder = os.path.join(output_folder, 'coords')           # Where we save the coordinate data
 
     # Step 1: Convert PDF to images
     image_paths = convert_pdf_to_images(pdf_path, temp_images_folder)

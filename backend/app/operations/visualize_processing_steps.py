@@ -1,9 +1,8 @@
 
-"""
-visualize_processing_steps.py
+#
 Visualize the main preprocessing stages:
 Raw image → Grayscale → Binarized → Cleaned → Normalized (64×64)
-"""
+#
 
 import os
 import cv2
@@ -15,7 +14,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 img_path = os.path.join(BASE, "raw_chars", "page_3_char_011.png")  
 print("📁 Using sample:", img_path)
 if not os.path.exists(img_path):
-    raise FileNotFoundError("❌ Cannot find this image, please check the file name.")
+    raise FileNotFoundError("Cannot find this image, please check the file name.")
 
 # Step 1: load raw image
 img = cv2.imread(img_path)
@@ -48,9 +47,9 @@ for i, (im, title) in enumerate(zip(steps, titles), start=1):
 # === save final normalized character ===
 output_path = "final_normalized_char.png"  
 cv2.imwrite(output_path, final)
-print(f"✅ Final normalized image saved to: {output_path}")
+print(f" Final normalized image saved to: {output_path}")
 
 plt.tight_layout()
 os.makedirs("figures", exist_ok=True)
 plt.savefig("figures/processing_steps_normal.png", dpi=300)
-print("✅ Figure saved to: figures/processing_steps_normal.png")
+print(" Figure saved to: figures/processing_steps_normal.png")

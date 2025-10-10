@@ -1,4 +1,4 @@
-# Chinese Character Detection from Medieval Documents
+# Chinese Character Detection from Historical Documents
 
 ## 🧾 Project Overview
 This project detects **Chinese characters from medieval paper images (PDF or image format)** using **YOLOv10**.  

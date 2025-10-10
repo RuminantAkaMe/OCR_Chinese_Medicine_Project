@@ -482,9 +482,9 @@ if __name__ == "__main__":
     print("="*70)
     
     evaluate_prediction(
-        pred_image_path='Datasets/labeled/8_org.jpeg',
-        gt_json_path='Datasets/labeled/8_org.jpeg.json',
-        model_path='models/chinese_characters_model3/weights/best.pt',
+        pred_image_path='LabeledImage/8_org.jpeg',
+        gt_json_path='LabeledImage/8_org.jpeg.json',
+        model_path='best.pt',
         iou_threshold=0.1,     # Pretty lenient - accepts boxes with just 10% overlap
         conf_threshold=0.5,    # Only accept detections with 50%+ confidence
         pad_pixels=4,          # Add small padding to help with slight misalignments

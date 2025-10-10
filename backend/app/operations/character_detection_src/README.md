@@ -77,6 +77,7 @@ project_folder/
 ├── character_detection.py
 ├── evaluate.py
 ├── best.pt
+├── data.yaml
 ├── yolov10n.pt
 ├── LabeledImage/
 └── Datasets/  (Optional)

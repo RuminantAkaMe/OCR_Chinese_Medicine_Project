@@ -1,7 +1,7 @@
 Chinese Character Isolation Module
 🧾 Project Overview
 
-This module isolates and preprocesses individual Chinese characters from scanned pages.
+This module isolates and preprocesses individual Chinese characters from ancient handwriiten documents.
 It is designed as the second stage after character detection (YOLO-based) in the BIMAP OCR Pipeline.
 
 The system performs the following steps automatically:
@@ -14,9 +14,7 @@ Performs noise removal, binarization, and size normalization
 
 Exports clean 64×64 character patches for recognition and semantic annotation
 
-🧑‍💻 Team Member
 
-Weiwei Zhang – Character Isolation Module
 
 🧩 Prerequisites
 

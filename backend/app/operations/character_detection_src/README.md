@@ -76,6 +76,7 @@ project_folder/
 ├── README.md
 ├── character_detection.py
 ├── evaluate.py
+├── train.py
 ├── best.pt
 ├── data.yaml
 ├── yolov10n.pt
@@ -88,17 +89,18 @@ project_folder/
 |--------------|-------------|
 | `character_detection.py` | Main script for detection (PDF/image input → character bounding boxes) |
 | `evaluate.py` | Evaluates model accuracy (Precision, Recall, F1, mAP, IoU) |
+| `train.py` | Script to train the YOLOv10 model on a custom dataset |
 | `best.pt` | Trained YOLOv10 model weights |
-| `data.yaml` | pre defined file to train YOLOv10 model |
+| `data.yaml` | Configuration file defining dataset paths for training/validation |
 | `yolov10n.pt` | Base YOLOv10n model (optional or pretrained) |
 | `LabeledImage/` | Folder containing labeled data or test samples |
-| `Datasets/1800.pdf` | Input PDF file for detection if the user has not provided otherwise go with the user provided pdf |
+| `Datasets/1800.pdf` | Input PDF file for detection if user hasn’t provided their own |
 
 ---
 
 ## 🚀 Usage
 
-### ⚠️ Before Running( if you want to run this without any website provided PDF)
+### ⚠️ Before Running (if you want to run without providing your own PDF)
 If you want to run the detection system:  
 1. **Create a folder** named `Datasets` in the project root (if it doesn’t exist).  
 2. **Upload your input PDF** inside the `Datasets` folder.  
@@ -134,11 +136,43 @@ python evaluate.py
 ```
 
 **Outputs:**
-- Precision, Recall, F1-Score, and mAP
-- Mean IoU for predicted boxes
-- Precision-Recall curves and metric plots
+- Precision, Recall, F1-Score, and mAP  
+- Mean IoU for predicted boxes  
+- Precision-Recall curves and metric plots  
 
 > Results and visualizations are automatically saved in the output directory (defined in `evaluate.py`).
+
+---
+
+### 3. Train Model on Custom Dataset
+If you want to train the YOLOv10 model on your own dataset, use `train.py`.  
+
+```bash
+python train.py
+```
+
+**How to set up your custom dataset:**
+1. Open the `data.yaml` file.  
+2. Modify the paths for your **training** and **validation** datasets.  
+   Example:
+   ```yaml
+   train: path/to/your/train/images
+   val: path/to/your/val/images
+   nc: 1
+   names: ['character']
+   ```
+3. Create separate folders for training and validation:
+   ```
+   dataset/
+   ├── train/
+   │   ├── images/
+   │   └── labels/
+   └── val/
+       ├── images/
+       └── labels/
+   ```
+4. Place your labeled images and corresponding YOLO-format text files inside these folders.  
+5. Run `train.py` to start training — a new `best.pt` will be generated upon completion.
 
 ---
 
@@ -216,13 +250,14 @@ pip install ultralytics torch opencv-python pdf2image matplotlib numpy
 - Vertical text line grouping  
 - Color-coded bounding boxes  
 - Evaluation with multiple metrics  
+- Custom model training support via `train.py`  
 - Lightweight YOLOv10n model  
 
 ---
 
 ## 📬 Contact
 
-For questions or issues, contact your **hardik7393@gmail.com**.
+For questions or issues, contact **hardik7393@gmail.com**.
 
 ---
 

@@ -15,19 +15,19 @@ def run(pdf_path: str) -> str:
     # path to the uploaded PDF
     input_path = pdf_path
     # REQUIRED: put here the path to the file you want to present in the UI 
-    presentation_path = operations_dir / "character_detection_src" / "data" / "output" / "000.png"
+    presentation_path = operations_dir / "character_detection_src" / "data" / "output" / "page_1.jpg"
     # REQUIRED: create the output directory if not already existing and put your RESULTS here --> INPUT OF NEXT STAGE
     output_path = operations_dir / "character_detection_src" / "data" / "output"
 
     # path to your environment
     env_python = backend_dir / ".venv310" / "Scripts" / "python.exe" 
     # path to your script
-    script = os.path.abspath( operations_dir / "character_detection_src" / "empty_placeholder_script.py")
+    script = os.path.abspath(operations_dir / "character_detection_src" / "character_detection.py")
     # start your script in your environment
     # input_path = sys.argv[1]
     # output_path = sys.argv[2]
     # you can ad arguments if you want:  subprocess.run([env_python, script, input_path, output_path], check=True)
-    subprocess.run([env_python, script], check=True) 
+    subprocess.run([env_python, script, input_path, str(output_path)], check=True)
     
 
     return str(presentation_path)

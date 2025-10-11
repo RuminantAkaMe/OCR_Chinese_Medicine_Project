@@ -222,7 +222,7 @@ pip install ultralytics torch opencv-python pdf2image matplotlib numpy
 
 ## 📬 Contact
 
-For questions or issues, contact your **hardik.chauhan@fau.de**.
+For questions or issues, contact your **hardik7393@gmail.com**.
 
 ---
 

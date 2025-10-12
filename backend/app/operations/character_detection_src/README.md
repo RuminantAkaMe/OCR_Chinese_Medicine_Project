@@ -81,6 +81,10 @@ project_folder/
 ├── data.yaml
 ├── yolov10n.pt
 ├── LabeledImage/
+    └── 7.jpg (1st image for testing purposes)
+    └── 7.jpg.json (contains the coordinates for the manually labelled file for the 1st image)
+    └── 8_org.jpeg (2nd image for testing purposes)
+    └── 8_org.jpeg.json (contains the coordinates for the manually labelled file for the 2nd image)
 └── Datasets/  (Optional)
     └── 1800.pdf
 ```
@@ -93,7 +97,7 @@ project_folder/
 | `best.pt` | Trained YOLOv10 model weights |
 | `data.yaml` | Configuration file defining dataset paths for training/validation |
 | `yolov10n.pt` | Base YOLOv10n model (optional or pretrained) |
-| `LabeledImage/` | Folder containing labeled data or test samples |
+| `LabeledImage/` | Folder containing labeled data or test samples, used in the evaluate.py file |
 | `Datasets/1800.pdf` | Input PDF file for detection if user hasn’t provided their own |
 
 ---
@@ -173,6 +177,28 @@ python train.py
    ```
 4. Place your labeled images and corresponding YOLO-format text files inside these folders.  
 5. Run `train.py` to start training — a new `best.pt` will be generated upon completion.
+
+---
+
+> ⚠️ **IMPORTANT WARNING — MODEL PATH CHANGE REQUIRED**
+>
+> When you train your own dataset using `train.py`, YOLO will automatically save your trained model at:  
+> **`chinese_characters_model_yolo10/weights/best.pt`**
+>
+> Therefore, if you plan to use this newly trained model in `character_detection.py`,  
+> you **must update** the following line inside that file:
+>
+> ```python
+> trained_model_path = 'best.pt'
+> ```
+>
+> Change it to:
+>
+> ```python
+> trained_model_path = 'chinese_characters_model_yolo10/weights/best.pt'
+> ```
+>
+> This ensures that the detection script uses your latest trained model instead of the default one.
 
 ---
 

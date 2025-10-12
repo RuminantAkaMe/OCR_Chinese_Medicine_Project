@@ -41,3 +41,4 @@ OCR_Chinese_Medicine_Project
 │   │   ├── operations/    # Separate Python files for each processing step
 │   └── uploaded_files     # Temporary storage for uploaded/processed files
 └── README.md              # This document
+

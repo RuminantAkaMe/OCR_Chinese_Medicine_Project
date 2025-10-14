@@ -1,0 +1,186 @@
+#########################################################################
+# PP-OCRv5_server_rec.yml
+#
+# Purpose:
+#   Configuration file for training/evaluating the PP-OCRv5 recognition model.
+#   This YAML contains Global training flags, optimizer settings, architecture
+#   specification, data paths for training/evaluation, and evaluation/early
+#   stopping parameters used by `tools/train.py` and `tools/eval.py`.
+#
+# Early stopping semantics (how patience is measured):
+#   - When `Global.use_early_stopping` is true, an EarlyStopping helper is
+#     constructed in `tools/train.py` using the values below (patience,
+#     min_delta, mode). The EarlyStopping callback is then stored at
+#     `config['Global']['early_stopping_callback']` and is expected to be
+#     invoked from the training loop during evaluation checkpoints.
+#   - Patience counts the number of consecutive evaluation checkpoints with
+#     no sufficient improvement. An evaluation checkpoint occurs whenever the
+#     training loop runs the evaluation logic — controlled by
+#     `Global.eval_batch_step` (e.g., `[0, 1000]` means evaluate at batch 0 and
+#     every 1000 batches thereafter) or at epoch boundaries if the training
+#     loop is configured to compute metrics per epoch.
+#   - Improvement is measured against the monitored metric according to
+#     `Global.early_stopping_mode` ('max' implies higher is better, typically
+#     used for accuracy). The change must exceed
+#     `Global.early_stopping_min_delta` to be considered an improvement.
+#
+# Model saving and restore behavior:
+#   - If `Global.save_best_model_only` is true the EarlyStopping helper will
+#     write the best model to `Global.save_model_dir` (file prefix
+#     `best_accuracy_epoch_`) when an improved metric is observed.
+#   - If `Global.restore_best_weights` is true, `tools/train.py` will restore
+#     the best weights into the model after training stops (either normally or
+#     due to early stopping).
+#
+# Notes:
+#   - `print_batch_step` controls how often training losses are printed.
+#   - `cal_metric_during_train` enables metric calculation during training
+#     (when true, metrics are calculated at the eval checkpoints).
+#   - `calc_epoch_interval` controls how often metrics are computed in terms
+#     of epochs when epoch-based metric calculation is enabled.
+Global:
+  model_name: PP-OCRv5_server_rec # To use static model for inference.
+  debug: false
+  use_gpu: true
+  epoch_num: 10
+  
+  # Early stopping configuration - optimized for capacity
+  use_early_stopping: true          # Enable early stopping
+  early_stopping_patience: 15       # Increased from 10 to 15 (more training tolerance)
+  early_stopping_min_delta: 0.0005  # Reduced from 0.001 to 0.0005 (more sensitive)
+  early_stopping_mode: max          # 'max' for accuracy, 'min' for loss
+  restore_best_weights: true        # Restore best model weights
+  save_best_model_only: true        # Only save best model
+  log_smooth_window: 20
+  print_batch_step: 10
+  save_model_dir: /home/woody/vlbi/vlbi102v/Gnt1.1TrainPart1/trained_part  # Remove the "./"
+  save_epoch_step: -1              # Disable automatic epoch saving (-1 means never save)
+  eval_batch_step: [0, 1000]   #eval_batch_step: [0, 2000]
+  cal_metric_during_train: true
+  calc_epoch_interval: 1
+  pretrained_model: 
+  checkpoints:
+  save_inference_dir:
+  use_visualdl: false
+  infer_img: doc/imgs_words/ch/word_1.jpg
+  character_dict_path: /home/hpc/vlbi/vlbi102v/PaddleOCR/ppocr/utils/dict/ppocrv5_dict.txt  # Use absolute path
+  max_text_length: &max_text_length 25
+  infer_mode: false
+  use_space_char: true
+  distributed: true
+  save_res_path: /home/woody/vlbi/vlbi102v/Gnt1.0Test/output/predicts_ppocrv5.txt  # Remove the "./"
+  d2s_train_image_shape: [3, 48, 320]
+
+
+Optimizer:
+  name: Adam
+  beta1: 0.9
+  beta2: 0.999
+  lr:
+    name: Cosine
+    learning_rate: 0.0005
+    warmup_epoch: 1
+  regularizer:
+    name: L2
+    factor: 3.0e-05
+
+
+Architecture:
+  model_type: rec
+  algorithm: SVTR_HGNet
+  Transform:
+  Backbone:
+    name: PPHGNetV2_B4
+    text_rec: True
+  Head:
+    name: MultiHead
+    head_list:
+      - CTCHead:
+          Neck:
+            name: svtr
+            dims: 120
+            depth: 2
+            hidden_dims: 120
+            kernel_size: [1, 3]
+            use_guide: True
+          Head:
+            fc_decay: 0.00001
+      - NRTRHead:
+          nrtr_dim: 384
+          max_text_length: *max_text_length
+
+Loss:
+  name: MultiLoss
+  loss_config_list:
+    - CTCLoss:
+    - NRTRLoss:
+
+PostProcess:  
+  name: CTCLabelDecode
+
+Metric:
+  name: RecMetric
+  main_indicator: acc
+
+Train:
+  dataset:
+    name: MultiScaleDataSet
+    ds_width: false
+    data_dir: /home/woody/vlbi/vlbi102v/Gnt1.1TrainPart1/Gnt1.1TrainPart1_images  # Single base directory
+    ext_op_transform_idx: 1
+    label_file_list:
+    - /home/hpc/vlbi/vlbi102v/PaddleOCR/label/p1_1.1.txt
+    #- /home/hpc/vlbi/vlbi102v/PaddleOCR/label/part2.txt
+    #- /home/hpc/vlbi/vlbi102v/PaddleOCR/label/part3.txt
+    transforms:
+    - DecodeImage:
+        img_mode: BGR
+        channel_first: false
+    - RecAug:
+    - MultiLabelEncode:
+        gtc_encode: NRTRLabelEncode
+    - KeepKeys:
+        keep_keys:
+        - image
+        - label_ctc
+        - label_gtc
+        - length
+        - valid_ratio
+  sampler:
+    name: MultiScaleSampler
+    scales: [[320, 32], [320, 48], [320, 64]]
+    first_bs: &bs 256  # Increased from 128 to 256
+    fix_bs: false
+    divided_factor: [8, 16] # w, h
+    is_training: True
+  loader:
+    shuffle: true
+    batch_size_per_card: *bs
+    drop_last: true
+    num_workers: 128  # Increased from 64 to 128 for better data throughput 
+Eval:
+  dataset:
+    name: SimpleDataSet
+    data_dir: /home/woody/vlbi/vlbi102v/Gnt1.1Test/Gnt1.1TestImages  # Remove the "./"
+    label_file_list:
+    - /home/hpc/vlbi/vlbi102v/PaddleOCR/label/Gnt1.1TestImages.txt  # Remove the "./"
+    transforms:
+    - DecodeImage:
+        img_mode: BGR
+        channel_first: false
+    - MultiLabelEncode:
+        gtc_encode: NRTRLabelEncode
+    - RecResizeImg:
+        image_shape: [3, 48, 320]
+    - KeepKeys:
+        keep_keys:
+        - image
+        - label_ctc
+        - label_gtc
+        - length
+        - valid_ratio
+  loader:
+    shuffle: true
+    drop_last: false
+    batch_size_per_card: 512  # Increased from 256 to 512
+    num_workers: 64

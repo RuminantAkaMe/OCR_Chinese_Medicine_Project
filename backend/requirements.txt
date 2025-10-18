@@ -1,3 +1,7 @@
+--extra-index-url https://download.pytorch.org/whl/cu118
+torch==2.7.0
+torchvision==0.22.0
+torchaudio==2.7.0
 accelerate==1.7.0
 aiohappyeyeballs==2.6.1
 aiohttp==3.12.9
@@ -115,9 +119,6 @@ orjson==3.10.18
 outlines==0.1.11
 outlines_core==0.1.26
 packaging==24.2
-paddleocr==3.1.0
-paddlepaddle-gpu==3.0.0
-paddlex==3.1.1
 pandas==2.3.0
 partial-json-parser==0.2.1.1.post5
 peft==0.15.2
@@ -172,9 +173,6 @@ termcolor==2.5.0
 threadpoolctl==3.6.0
 tiktoken==0.9.0
 tokenizers==0.21.1
-torch==2.7.0+cu118
-torchaudio==2.7.0+cu118
-torchvision==0.22.0+cu118
 tqdm==4.67.1
 transformers==4.52.4
 typer==0.16.0

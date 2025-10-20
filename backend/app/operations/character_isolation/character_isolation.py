@@ -5,48 +5,52 @@ import numpy as np
 from PIL import Image
 from unified_preprocess import process_crop   # import preprocess function
 
+# Directory Configuration 
+#  output folder
+INPUT_DIR = os.path.join("..", "character_detection_src", "LabeledImage")
 
-# --- Directory Configuration ---
-COORDS_DIR = 'coords'
 RAW_DIR    = 'raw_chars'
-IMAGES_DIR = 'temp_images'
 OUT_DIR    = 'isolated_chars'
 TARGET_SIZE = (64, 64)
-
 
 # Ensure required directories exist
 os.makedirs(RAW_DIR, exist_ok=True)
 os.makedirs(OUT_DIR, exist_ok=True)
 
 
-def isolate_chars(images_folder, coords_folder, raw_folder, out_folder, target_size):
+def isolate_chars(input_dir, raw_folder, out_folder, target_size):
+    """
+    Read detection output (image + .json pairs),
+    crop each bounding box, and save processed 64x64 characters.
+    """
 
-    # Collect all coordinate JSON files (sorted by page number)
-    coord_paths = sorted(glob.glob(os.path.join(coords_folder, 'page_*.json')))
+    # Collect all image files
+    image_files = sorted(glob.glob(os.path.join(input_dir, "*.jpg")) +
+                         glob.glob(os.path.join(input_dir, "*.jpeg")) +
+                         glob.glob(os.path.join(input_dir, "*.png")))
+
     out_files = []
 
-    for coord_path in coord_paths:
-        idx = os.path.splitext(os.path.basename(coord_path))[0].split('_')[1]
-        
-        # Find corresponding image for this page
-        img_path = os.path.join(images_folder, f'page_{idx}.jpg')
-
-        if not os.path.isfile(img_path):
-            print(f"[WARN] Missing {img_path}")
+    for img_path in image_files:
+        json_path = img_path + ".json"
+        if not os.path.exists(json_path):
+            print(f"[WARN] No JSON found for {os.path.basename(img_path)}")
             continue
 
-        # Open page image and convert to grayscale
+        # Open page image and load JSON
         img = Image.open(img_path).convert('L')
-        boxes = json.load(open(coord_path))
+        with open(json_path, 'r') as f:
+            boxes = json.load(f)
 
         for i, (x1, y1, x2, y2) in enumerate(boxes):
             crop = img.crop((x1, y1, x2, y2))
 
-            # Save raw cropped image 
-            raw_fn = f'page_{idx}_char_{i:03d}.png'
-            crop.save(os.path.join(raw_folder, raw_fn))
+            # Save raw cropped image using original filename
+            raw_fn = f"{os.path.basename(img_path)}_char_{i:03d}.png"
+            raw_save_path = os.path.join(raw_folder, raw_fn)
+            crop.save(raw_save_path)
 
-            # Apply unified preprocessing (denoise + contrast + normalization) 
+            # Apply unified preprocessing (denoise + contrast + normalization)
             crop_cv = np.array(crop)
             result = process_crop(crop_cv, target_size)
 
@@ -63,7 +67,7 @@ def isolate_chars(images_folder, coords_folder, raw_folder, out_folder, target_s
 
 
 if __name__ == '__main__':
-    result = isolate_chars(IMAGES_DIR, COORDS_DIR, RAW_DIR, OUT_DIR, TARGET_SIZE)
+    result = isolate_chars(INPUT_DIR, RAW_DIR, OUT_DIR, TARGET_SIZE)
     print("Standalone run ->", result)
 
 

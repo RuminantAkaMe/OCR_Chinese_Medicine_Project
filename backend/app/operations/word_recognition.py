@@ -29,17 +29,10 @@ def run() -> str:
     env_python = backend_dir / ".venv310" / "Scripts" / "python.exe" 
 
     # Path to the sliding window inference script
-    script = operations_dir / "word_recognition_src" / "model" / "sliding_window_inference.py"
+    script = os.path.abspath( operations_dir / "word_recognition_src" / "empty_placeholder_script.py")
+    subprocess.run([env_python, script], check=True) 
 
-    # Define parameters
-    window_size = "6"
-    step_size = "3"  # or leave out to auto-use window_size // 2 in the script
 
-    # Run the script
-    subprocess.run(
-        [env_python, str(script), "--window-size", window_size, "--step", step_size],
-        check=True
-    )
 
     return str(presentation_path)
 

@@ -15,7 +15,7 @@ def run() -> str:
     # the path to output folder of the previous stage --> YOUR INPUT
     input_path = operations_dir / "character_segmentation_src" / "data" / "output"
     # REQUIRED: put here the path to the file you want to present in the UI 
-    presentation_path = operations_dir / "character_recognition_src" / "data" / "output" / "page_19_char_001.json"
+    presentation_path = operations_dir / "word_recognition_src" / "data" / "presentation" / "character_recognition_results.json"
     # REQUIRED: create the output directory if not already existing and put your RESULTS here --> INPUT OF NEXT STAGE
     output_path = operations_dir / "character_recognition_src" / "data" / "output"
 

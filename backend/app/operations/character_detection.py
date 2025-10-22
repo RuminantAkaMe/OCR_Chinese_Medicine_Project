@@ -15,7 +15,7 @@ def run(pdf_path: str) -> str:
     # path to the uploaded PDF
     input_path = pdf_path
     # REQUIRED: put here the path to the file you want to present in the UI 
-    presentation_path = operations_dir / "character_detection_src" / "data" / "output" / "000.png"
+    presentation_path = operations_dir / "word_recognition_src" / "data" / "presentation" / "character_detection.jpeg"
     # REQUIRED: create the output directory if not already existing and put your RESULTS here --> INPUT OF NEXT STAGE
     output_path = operations_dir / "character_detection_src" / "data" / "output"
 

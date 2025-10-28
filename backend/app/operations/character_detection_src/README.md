@@ -29,7 +29,7 @@ The system performs the following steps automatically:
 ### Step 1: Clone the Repository
 ```bash
 git clone 'https://github.com/RuminantAkaMe/OCR_Chinese_Medicine_Project'
-cd character_detection_branch
+go to OCR_Chinese_Medicine_Project-main/backend/app/operations/character_detection_src/
 ```
 
 ---

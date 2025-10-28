@@ -18,14 +18,23 @@ The system performs the following steps automatically:
 
 ## 🧩 Prerequisites
 
-- Python 3.8 or higher  
+- Python 3.10 or higher  
 - Poppler (required by `pdf2image` if working with PDFs)
+- Git (for cloning the repository)
 
 ---
 
 ## ⚙️ Installation
 
-### Step 1: Install Poppler
+### Step 1: Clone the Repository
+```bash
+git clone <repository-url>
+cd OCR_Chinese_Medicine_Project-main/backend
+```
+
+---
+
+### Step 2: Install Poppler
 **Windows**
 ```bash
 Download from: https://github.com/oschwartz10612/poppler-windows/releases
@@ -45,26 +54,28 @@ sudo apt-get install poppler-utils
 
 ---
 
-### Step 2: Create a Virtual Environment
+### Step 3: Create a Virtual Environment
 ```bash
-python -m venv venv
-```
+# Create virtual environment
+python -m venv .venv310
 
-**Activate (Mac/Linux):**
-```bash
-source venv/bin/activate
-```
+# Activate (Mac/Linux):
+source .venv310/bin/activate
 
-**Activate (Windows):**
-```bash
-venv\Scripts\activate
+# Activate (Windows):
+.venv310\Scripts\activate
 ```
 
 ---
 
-### Step 3: Install Dependencies
+### Step 4: Install Dependencies
 ```bash
 pip install -r requirements.txt
+```
+
+If `requirements.txt` doesn't exist, install manually:
+```bash
+pip install fastapi uvicorn opencv-python numpy ultralytics pdf2image pillow python-multipart pytest pytest-cov reportlab
 ```
 
 ---
@@ -72,56 +83,202 @@ pip install -r requirements.txt
 ## 🗂️ Project Structure
 
 ```
-project_folder/
-├── README.md
-├── character_detection.py
-├── evaluate.py
-├── train.py
-├── best.pt
-├── data.yaml
-├── yolov10n.pt
-├── LabeledImage/
-    └── 7.jpg (1st image for testing purposes)
-    └── 7.jpg.json (contains the coordinates for the manually labelled file for the 1st image)
-    └── 8_org.jpeg (2nd image for testing purposes)
-    └── 8_org.jpeg.json (contains the coordinates for the manually labelled file for the 2nd image)
-└── Datasets/  (Optional)
-    └── 1800.pdf
+OCR_Chinese_Medicine_Project-main/
+├── backend/
+│   ├── app/
+│   │   └── operations/
+│   │       ├── character_detection.py (API wrapper)
+│   │       └── character_detection_src/
+│   │           ├── character_detection.py (Main detection script)
+│   │           ├── evaluate.py
+│   │           ├── train.py
+│   │           ├── best.pt (Trained model)
+│   │           ├── data.yaml
+│   │           ├── yolov10n.pt
+│   │           ├── LabeledImage/
+│   │           │   ├── 7.jpg
+│   │           │   ├── 7.jpg.json
+│   │           │   ├── 8_org.jpeg
+│   │           │   └── 8_org.jpeg.json
+│   │           └── test_data/ (for testing)
+│   │               └── sample.pdf
+│   ├── tests/
+│   │   ├── __init__.py
+│   │   ├── test_character_detection.py
+│   │   └── test_integration.py
+│   ├── .venv310/
+│   ├── requirements.txt
+│   ├── verify_pipeline.py
+│   ├── test_pipeline.py
+│   └── create_test_pdf.py
+└── README.md
 ```
 
 | File/Folder | Description |
 |--------------|-------------|
-| `character_detection.py` | Main script for detection (PDF/image input → character bounding boxes) |
+| `character_detection.py` (wrapper) | API interface that calls the main detection script via subprocess |
+| `character_detection.py` (main) | Core detection logic (PDF/image → character bounding boxes) |
 | `evaluate.py` | Evaluates model accuracy (Precision, Recall, F1, mAP, IoU) |
 | `train.py` | Script to train the YOLOv10 model on a custom dataset |
 | `best.pt` | Trained YOLOv10 model weights |
 | `data.yaml` | Configuration file defining dataset paths for training/validation |
 | `yolov10n.pt` | Base YOLOv10n model (optional or pretrained) |
-| `LabeledImage/` | Folder containing labeled data or test samples, used in the evaluate.py file |
-| `Datasets/1800.pdf` | Input PDF file for detection if user hasn’t provided their own |
+| `LabeledImage/` | Folder containing labeled data or test samples |
+| `verify_pipeline.py` | Verification script to check if setup is correct |
+| `test_pipeline.py` | End-to-end testing script |
+| `create_test_pdf.py` | Utility to generate test PDF files |
 
 ---
 
-## 🚀 Usage
+## 🧪 Testing Your Branch Locally
 
-### ⚠️ Before Running (if you want to run without providing your own PDF)
-If you want to run the detection system:  
-1. **Create a folder** named `Datasets` in the project root (if it doesn’t exist).  
-2. **Upload your input PDF** inside the `Datasets` folder.  
-3. **Rename the PDF file to** `1800.pdf`.  
+### Quick Verification Guide
 
-Example:
-```
-project_folder/
-└── Datasets/
-    └── 1800.pdf
-```
+Follow these steps to ensure your character detection branch is working correctly:
 
----
+#### Step 1: Verify Setup
+First, check if everything is installed correctly:
 
-### 1. Run Character Detection
 ```bash
-python character_detection.py
+cd backend
+python verify_pipeline.py
+```
+
+**Expected Output:**
+```
+🔍 Verifying Character Detection Pipeline
+
+✅ Wrapper found
+✅ Actual script found
+✅ Virtual environment found
+✅ YOLO model found
+
+📦 Checking dependencies:
+✅ OpenCV (cv2) installed
+✅ NumPy installed
+✅ Ultralytics (YOLO) installed
+✅ pdf2image installed
+
+==================================================
+Pipeline Flow:
+==================================================
+1. API receives PDF upload
+2. Calls: operations/character_detection.py
+3. Which runs: subprocess with python
+4. Which executes: character_detection_src/character_detection.py
+5. Results saved in: character_detection_src/data/output/
+6. Returns: path to page_1.jpg
+==================================================
+```
+
+---
+
+#### Step 2: Create Test PDF
+Generate a simple test PDF for testing:
+
+```bash
+python create_test_pdf.py
+```
+
+**Output:**
+```
+✅ Test PDF created at: app/operations/character_detection_src/test_data/sample.pdf
+```
+
+---
+
+#### Step 3: Run Complete Pipeline Test
+Test the entire character detection pipeline:
+
+```bash
+python test_pipeline.py
+```
+
+**Expected Output:**
+```
+🔍 Testing with PDF: .../test_data/sample.pdf
+🚀 Running character detection pipeline...
+
+[INFO] Converting PDF to images...
+[INFO] Running character detection...
+[INFO] Saved detection result for page_0.jpg
+[INFO] Saved detection result for page_1.jpg
+[INFO] Process completed.
+
+✅ SUCCESS!
+📄 Result saved at: .../data/output/page_1.jpg
+✅ Output file verified: page_1.jpg
+
+📊 Generated 2 image(s):
+   • page_0.jpg
+   • page_1.jpg
+```
+
+---
+
+#### Step 4: Run Unit Tests (Optional)
+Run the complete test suite using pytest:
+
+```bash
+# Run all tests
+pytest
+
+# Run with verbose output
+pytest -v
+
+# Run with coverage report
+pytest --cov=app/operations/character_detection_src --cov-report=html
+
+# Run specific test file
+pytest tests/test_character_detection.py
+```
+
+**Expected Output:**
+```
+============================= test session starts ==============================
+collected 15 items
+
+tests/test_character_detection.py ........                              [ 53%]
+tests/test_integration.py .......                                       [100%]
+
+============================== 15 passed in 2.34s ===============================
+```
+
+---
+
+#### Step 5: Test with Your Own PDF
+To test with your own PDF file:
+
+```bash
+cd app/operations/character_detection_src
+python character_detection.py "path/to/your/test.pdf" "data/output"
+```
+
+**Example:**
+```bash
+python character_detection.py "/Users/username/Documents/my_document.pdf" "data/output"
+```
+
+---
+
+### Troubleshooting Tests
+
+| Issue | Solution |
+|-------|----------|
+| **"Test PDF not found"** | Run `python create_test_pdf.py` first |
+| **"Module not found"** | Make sure virtual environment is activated and dependencies installed |
+| **"Poppler not found"** | Install poppler (see installation steps above) |
+| **"best.pt not found"** | Ensure your trained model is in `character_detection_src/best.pt` |
+| **Tests fail on Mac/Linux** | Check that `operations/character_detection.py` uses `sys.executable` for Python path |
+
+---
+
+## 🚀 Usage in Production
+
+### 1. Run Character Detection (Direct Script)
+```bash
+cd app/operations/character_detection_src
+python character_detection.py "input.pdf" "data/output"
 ```
 
 **What it does:**
@@ -130,12 +287,22 @@ python character_detection.py
 - Detects and groups Chinese characters
 - Saves results with colored bounding boxes
 
-> Input file path is fixed as `Datasets/1800.pdf`.
+---
+
+### 2. Run via API Wrapper
+```python
+from app.operations import character_detection
+
+pdf_path = "path/to/your/document.pdf"
+result_path = character_detection.run(pdf_path)
+print(f"Result saved at: {result_path}")
+```
 
 ---
 
-### 2. Evaluate Model Performance
+### 3. Evaluate Model Performance
 ```bash
+cd app/operations/character_detection_src
 python evaluate.py
 ```
 
@@ -144,14 +311,15 @@ python evaluate.py
 - Mean IoU for predicted boxes  
 - Precision-Recall curves and metric plots  
 
-> Results and visualizations are automatically saved in the output directory (defined in `evaluate.py`).
+> Results and visualizations are automatically saved in the output directory.
 
 ---
 
-### 3. Train Model on Custom Dataset
-If you want to train the YOLOv10 model on your own dataset, use `train.py`.  
+### 4. Train Model on Custom Dataset
+If you want to train the YOLOv10 model on your own dataset:
 
 ```bash
+cd app/operations/character_detection_src
 python train.py
 ```
 
@@ -206,7 +374,7 @@ python train.py
 
 ### Inside `character_detection.py`
 ```python
-dpi = 300          # PDF to image resolution
+dpi = 300              # PDF to image resolution
 conf_threshold = 0.3   # YOLO detection confidence
 x_threshold = 50       # Distance threshold for grouping vertical text lines
 ```
@@ -242,29 +410,46 @@ analyze_thresholds = True
 
 ---
 
-## 🧰 Troubleshooting
+## 🧰 General Troubleshooting
 
 | Issue | Solution |
 |--------|-----------|
 | **Poppler not found** | Install and add to PATH (`pdftoppm -h` should work) |
-| **Model not found** | Check if `best.pt` is present in root folder |
+| **Model not found** | Check if `best.pt` is present in `character_detection_src/` folder |
 | **CUDA errors** | Ensure GPU is available or run on CPU |
 | **Low accuracy** | Lower confidence threshold or retrain model |
+| **Subprocess errors** | Ensure `operations/character_detection.py` uses `sys.executable` |
+| **Import errors** | Activate virtual environment: `source .venv310/bin/activate` |
 
 ---
 
 ## 📦 Dependencies
 
+Core dependencies:
 - `ultralytics` (YOLOv10)
 - `torch`
 - `opencv-python`
 - `pdf2image`
 - `matplotlib`
 - `numpy`
+- `fastapi`
+- `uvicorn`
+- `pillow`
+
+Testing dependencies:
+- `pytest`
+- `pytest-cov`
+- `pytest-mock`
+- `reportlab`
 
 Install all via:
 ```bash
-pip install ultralytics torch opencv-python pdf2image matplotlib numpy
+pip install -r requirements.txt
+```
+
+Or manually:
+```bash
+pip install ultralytics torch opencv-python pdf2image matplotlib numpy fastapi uvicorn pillow pytest pytest-cov reportlab
 ```
 
 ---
@@ -275,9 +460,54 @@ pip install ultralytics torch opencv-python pdf2image matplotlib numpy
 - Red mark removal (HSV + inpainting)  
 - Vertical text line grouping  
 - Color-coded bounding boxes  
+- Comprehensive test suite  
 - Evaluation with multiple metrics  
 - Custom model training support via `train.py`  
 - Lightweight YOLOv10n model  
+- API wrapper for easy integration
+- Cross-platform support (Windows, Mac, Linux)
+
+---
+
+## 🔄 Development Workflow
+
+### Making Changes to Character Detection
+
+1. **Make your changes** in `character_detection_src/character_detection.py`
+2. **Test your changes:**
+   ```bash
+   # Quick test with direct script
+   cd app/operations/character_detection_src
+   python character_detection.py "test_data/sample.pdf" "data/output"
+   
+   # Test through wrapper
+   cd backend
+   python test_pipeline.py
+   
+   # Run unit tests
+   pytest
+   ```
+3. **Commit and push** your changes
+4. **Create a pull request** with test results
+
+### Before Pushing Your Branch
+
+Run this checklist:
+```bash
+# 1. Verify setup
+python verify_pipeline.py
+
+# 2. Run pipeline test
+python test_pipeline.py
+
+# 3. Run unit tests
+pytest -v
+
+# 4. Check code quality (optional)
+pylint app/operations/character_detection_src/character_detection.py
+```
+
+All tests should pass before pushing! ✅
 
 ---
 
@@ -290,5 +520,14 @@ For questions or issues, contact **hardik7393@gmail.com**.
 ## 🪪 License
 Educational project for university coursework.
 
+---
+
+## 📝 Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | October 2025 | Initial release |
+| 1.1 | October 2025 | Added testing framework and documentation |
+
 **Last Updated:** October 2025  
-**Version:** 1.0
+**Current Version:** 1.1

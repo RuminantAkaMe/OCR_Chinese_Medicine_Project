@@ -5,22 +5,20 @@ import numpy as np
 from ultralytics import YOLO
 from pdf2image import convert_from_path
 import json
+from pathlib import Path
 
 
 def convert_pdf_to_images(pdf_path, output_folder):
     # First, let's clean up any existing images from previous runs
-    # Don't want old images messing things up
     if os.path.exists(output_folder):
         for file in os.listdir(output_folder):
             file_path = os.path.join(output_folder, file)
             if os.path.isfile(file_path):
                 os.remove(file_path)
     else:
-        # Create the folder if it doesn't exist yet
         os.makedirs(output_folder)
 
     # Convert each page of the PDF to a separate image
-    # Using 300 DPI for good quality - higher DPI means clearer text
     images = convert_from_path(pdf_path, dpi=300)
     image_paths = []
 
@@ -28,99 +26,85 @@ def convert_pdf_to_images(pdf_path, output_folder):
     for i, page in enumerate(images):
         image_path = os.path.join(output_folder, f'page_{i}.jpg')
         page.save(image_path, 'JPEG')
-        image_paths.append(image_path)  # Keep track of all the image paths
+        image_paths.append(image_path)
 
     return image_paths
 
-# Removing Red circles from the pdfs
+
 def remove_red_circles(img):
-    # Convert to HSV color space - it's easier to detect specific colors in HSV
+    # Convert to HSV color space
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-    # Red color appears in two ranges in HSV (wraps around at 0/180)
-    # First range: 0-10 (lower reds)
+    # Red color ranges
     lower_red1 = np.array([0, 100, 100])
     upper_red1 = np.array([10, 255, 255])
-    # Second range: 160-180 (upper reds)
     lower_red2 = np.array([160, 100, 100])
     upper_red2 = np.array([180, 255, 255])
 
     # Create masks for both red ranges
     mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
     mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
-    # Combine both masks to get all red pixels
     red_mask = cv2.bitwise_or(mask1, mask2)
 
-    # Make the mask slightly bigger to ensure we get all the red marks
+    # Dilate mask
     kernel = np.ones((5, 5), np.uint8)
     red_mask = cv2.dilate(red_mask, kernel, iterations=1)
 
-    # Fill in the red areas with surrounding pixels - like magic eraser!
+    # Inpaint
     img_no_red = cv2.inpaint(img, red_mask, inpaintRadius=3, flags=cv2.INPAINT_TELEA)
     return img_no_red
 
-# Putting boxes in each vertical line with different color
-def group_boxes_into_vertical_lines(boxes, x_threshold=50):
-    # Sort all boxes by their x-coordinate (left to right)
-    boxes = sorted(boxes, key=lambda b: b[0])
 
+def group_boxes_into_vertical_lines(boxes, x_threshold=50):
+    boxes = sorted(boxes, key=lambda b: b[0])
     lines = []
     current_line = []
 
-    # Group boxes that are vertically aligned (similar x-coordinates)
     for box in boxes:
         if not current_line:
-            # Start a new line with the first box
             current_line.append(box)
         else:
-            # Check if this box is close enough horizontally to be in the same line
             if abs(box[0] - current_line[-1][0]) < x_threshold:
                 current_line.append(box)
             else:
-                # Too far away - save current line and start a new one
                 lines.append(current_line)
                 current_line = [box]
 
-    # Don't forget to add the last line!
     if current_line:
         lines.append(current_line)
 
     return lines
 
+
 def predict(model_path, images_folder, results_folder, coords_folder):
-    # Make sure our output folders exist
     os.makedirs(results_folder, exist_ok=True)
     os.makedirs(coords_folder, exist_ok=True)
     
-    # Load our trained YOLO model for Chinese character detection
+    # Load YOLO model
     model = YOLO(model_path)
 
-    # Get all the JPG images we need to process
-    image_files = [f for f in os.listdir(images_folder) if f.endswith('.jpg')]
+    # Get all JPG images
+    image_files = sorted([f for f in os.listdir(images_folder) if f.endswith('.jpg')])
 
-    # Define some nice colors for different vertical lines
-    # Each line gets its own color to make them easy to distinguish
+    # Colors for vertical lines
     colors = [
-        (255, 0, 0), (0, 255, 0), (0, 0, 255),      # Blue, Green, Red
-        (255, 255, 0), (255, 0, 255), (0, 255, 255), # Cyan, Magenta, Yellow
-        (128, 0, 0), (0, 128, 0), (0, 0, 128)       # Dark versions
+        (255, 0, 0), (0, 255, 0), (0, 0, 255),
+        (255, 255, 0), (255, 0, 255), (0, 255, 255),
+        (128, 0, 0), (0, 128, 0), (0, 0, 128)
     ]
 
-    # Process each image one by one
     for img_file in image_files:
         img_path = os.path.join(images_folder, img_file)
         img = cv2.imread(img_path)
 
-        # Clean up any red circles/marks that might interfere with detection
+        # Remove red circles
         img = remove_red_circles(img)
         
-        # Save the cleaned image temporarily
+        # Save cleaned image temporarily
         temp_clean_path = os.path.join(images_folder, f"clean_{img_file}")
         cv2.imwrite(temp_clean_path, img)
 
-        # Run YOLO to detect Chinese characters
-        # Use file path instead of numpy array to avoid version issues
-        # Using direct call method which is more compatible
+        # Run YOLO detection
         results = model(temp_clean_path, conf=0.3, verbose=False)
         
         # Remove temporary file
@@ -129,69 +113,59 @@ def predict(model_path, images_folder, results_folder, coords_folder):
         # Extract bounding boxes
         boxes_xyxy = results[0].boxes.xyxy.cpu().numpy()
 
-        # Skip this image if no characters were found
         if len(boxes_xyxy) == 0:
             print(f"[INFO] No characters detected in {img_file}")
+            # Still save the image even if no detections
+            save_path = os.path.join(results_folder, img_file)
+            cv2.imwrite(save_path, img)
             continue
 
-        # Group the detected characters into vertical lines (columns of text)
+        # Group into vertical lines
         lines = group_boxes_into_vertical_lines(boxes_xyxy, x_threshold=50)
 
-        # Draw boxes around each character, coloring by which line they're in
+        # Draw boxes
         for idx, line in enumerate(lines):
-            color = colors[idx % len(colors)]  # Cycle through colors if we have many lines
+            color = colors[idx % len(colors)]
             for box in line:
                 x1, y1, x2, y2 = map(int, box[:4])
                 cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
 
-        # Save the image with all the detection boxes drawn on it
+        # Save result
         save_path = os.path.join(results_folder, img_file)
         cv2.imwrite(save_path, img)
         
-        # Also save the coordinates as JSON for later use
+        # Save coordinates
         coords_path = os.path.join(coords_folder, img_file.replace('.jpg', '.json'))
         with open(coords_path, 'w') as f:
             json.dump(boxes_xyxy.tolist(), f)
 
-        print(f"[INFO] Saved detection result for {img_file} with vertical lines in {results_folder}")
+        print(f"[INFO] Saved detection result for {img_file}")
+
 
 def run(pdf_path, output_folder):
-    # Set up all our folders
-    temp_images_folder = 'temp_images'  # Where we'll store the PDF pages as images
-    results_folder = output_folder        # Where the detection results go
-    trained_model_path = 'best.pt'  # Our trained model
-    coords_folder = os.path.join(output_folder, 'coords')           # Where we save the coordinate data
-
-    # Step 1: Convert PDF to images
-    image_paths = convert_pdf_to_images(pdf_path, temp_images_folder)
+    # Get the directory where this script is located
+    script_dir = Path(__file__).resolve().parent
     
-    # Step 2: Run detection on all the images
-    predict(trained_model_path, temp_images_folder, results_folder, coords_folder)
+    # Set up folders relative to script location
+    temp_images_folder = script_dir / 'data' / 'temp_images'
+    results_folder = Path(output_folder)
+    trained_model_path = script_dir / 'best.pt'  # Model in same folder as script
+    coords_folder = results_folder / 'coords'
 
-    # Step 3: Get the second page result (for some specific reason)
-    # Sort the results to make sure we get them in order
-    result_images = sorted(
-        [f for f in os.listdir(results_folder) if f.lower().endswith('.jpg')]
-    )
+    # Create temp folder
+    temp_images_folder.mkdir(parents=True, exist_ok=True)
 
-    # We need at least 2 images to get the second one
-    if len(result_images) >= 2:
-        second_image_path = os.path.join(results_folder, result_images[1])
+    print(f"[INFO] Converting PDF to images...")
+    # Step 1: Convert PDF to images
+    image_paths = convert_pdf_to_images(pdf_path, str(temp_images_folder))
+    
+    print(f"[INFO] Running character detection...")
+    # Step 2: Run detection
+    predict(str(trained_model_path), str(temp_images_folder), str(results_folder), str(coords_folder))
 
-        # Load the second image
-        img = cv2.imread(second_image_path)
+    print(f"[INFO] Process completed. Results saved to {results_folder}")
 
-        # Make sure the image loaded properly
-        if img is None:
-            print("[ERROR] Failed to load image.")
-            return None
 
-        return img  # Return the second page with detections
-    else:
-        print("[ERROR] Less than 2 images in results folder.")
-        return None
-
-# Run the whole pipeline on our PDF
 if __name__ == "__main__":
     if len(sys.argv) >= 3:
         pdf_path = sys.argv[1]

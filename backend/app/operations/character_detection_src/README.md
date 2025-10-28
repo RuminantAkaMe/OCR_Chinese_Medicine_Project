@@ -28,7 +28,7 @@ The system performs the following steps automatically:
 
 ### Step 1: Clone the Repository
 ```bash
-git clone <repository-url>
+git clone 'https://github.com/RuminantAkaMe/OCR_Chinese_Medicine_Project'
 cd OCR_Chinese_Medicine_Project-main/backend
 ```
 
@@ -107,10 +107,7 @@ OCR_Chinese_Medicine_Project-main/
 │   │   ├── test_character_detection.py
 │   │   └── test_integration.py
 │   ├── .venv310/
-│   ├── requirements.txt
-│   ├── verify_pipeline.py
-│   ├── test_pipeline.py
-│   └── create_test_pdf.py
+│   └── requirements.txt
 └── README.md
 ```
 
@@ -124,139 +121,132 @@ OCR_Chinese_Medicine_Project-main/
 | `data.yaml` | Configuration file defining dataset paths for training/validation |
 | `yolov10n.pt` | Base YOLOv10n model (optional or pretrained) |
 | `LabeledImage/` | Folder containing labeled data or test samples |
-| `verify_pipeline.py` | Verification script to check if setup is correct |
-| `test_pipeline.py` | End-to-end testing script |
-| `create_test_pdf.py` | Utility to generate test PDF files |
 
 ---
 
 ## 🧪 Testing Your Branch Locally
 
-### Quick Verification Guide
+### Quick Testing Guide
 
 Follow these steps to ensure your character detection branch is working correctly:
 
-#### Step 1: Verify Setup
-First, check if everything is installed correctly:
+#### Prerequisites for Testing
+1. Make sure you have activated your virtual environment:
+   ```bash
+   # Mac/Linux:
+   source .venv310/bin/activate
+   
+   # Windows:
+   .venv310\Scripts\activate
+   ```
 
-```bash
-cd backend
-python verify_pipeline.py
-```
+2. Ensure all dependencies are installed:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-**Expected Output:**
-```
-🔍 Verifying Character Detection Pipeline
-
-✅ Wrapper found
-✅ Actual script found
-✅ Virtual environment found
-✅ YOLO model found
-
-📦 Checking dependencies:
-✅ OpenCV (cv2) installed
-✅ NumPy installed
-✅ Ultralytics (YOLO) installed
-✅ pdf2image installed
-
-==================================================
-Pipeline Flow:
-==================================================
-1. API receives PDF upload
-2. Calls: operations/character_detection.py
-3. Which runs: subprocess with python
-4. Which executes: character_detection_src/character_detection.py
-5. Results saved in: character_detection_src/data/output/
-6. Returns: path to page_1.jpg
-==================================================
-```
+3. Verify that `best.pt` (trained model) exists in:
+   ```
+   app/operations/character_detection_src/best.pt
+   ```
 
 ---
 
-#### Step 2: Create Test PDF
-Generate a simple test PDF for testing:
+#### Testing the Character Detection
 
-```bash
-python create_test_pdf.py
-```
-
-**Output:**
-```
-✅ Test PDF created at: app/operations/character_detection_src/test_data/sample.pdf
-```
-
----
-
-#### Step 3: Run Complete Pipeline Test
-Test the entire character detection pipeline:
-
-```bash
-python test_pipeline.py
-```
-
-**Expected Output:**
-```
-🔍 Testing with PDF: .../test_data/sample.pdf
-🚀 Running character detection pipeline...
-
-[INFO] Converting PDF to images...
-[INFO] Running character detection...
-[INFO] Saved detection result for page_0.jpg
-[INFO] Saved detection result for page_1.jpg
-[INFO] Process completed.
-
-✅ SUCCESS!
-📄 Result saved at: .../data/output/page_1.jpg
-✅ Output file verified: page_1.jpg
-
-📊 Generated 2 image(s):
-   • page_0.jpg
-   • page_1.jpg
-```
-
----
-
-#### Step 4: Run Unit Tests (Optional)
-Run the complete test suite using pytest:
-
-```bash
-# Run all tests
-pytest
-
-# Run with verbose output
-pytest -v
-
-# Run with coverage report
-pytest --cov=app/operations/character_detection_src --cov-report=html
-
-# Run specific test file
-pytest tests/test_character_detection.py
-```
-
-**Expected Output:**
-```
-============================= test session starts ==============================
-collected 15 items
-
-tests/test_character_detection.py ........                              [ 53%]
-tests/test_integration.py .......                                       [100%]
-
-============================== 15 passed in 2.34s ===============================
-```
-
----
-
-#### Step 5: Test with Your Own PDF
-To test with your own PDF file:
-
+**Step 1: Navigate to the script directory**
 ```bash
 cd app/operations/character_detection_src
-python character_detection.py "path/to/your/test.pdf" "data/output"
+```
+
+**Step 2: Prepare a test PDF**
+- Place your test PDF file in a known location, or
+- Use an existing PDF from your `test_data/` folder
+
+**Step 3: Run the detection script**
+```bash
+python character_detection.py "path/to/your/pdf_name.pdf" "data/output"
 ```
 
 **Example:**
 ```bash
-python character_detection.py "/Users/username/Documents/my_document.pdf" "data/output"
+# Using absolute path
+python character_detection.py "/Users/username/Documents/test_document.pdf" "data/output"
+
+# Using relative path (if PDF is in test_data folder)
+python character_detection.py "test_data/sample.pdf" "data/output"
+```
+
+---
+
+#### Expected Output
+
+When the script runs successfully, you should see:
+
+```
+[INFO] Converting PDF to images...
+[INFO] Running character detection...
+[INFO] Saved detection result for page_0.jpg
+[INFO] Saved detection result for page_1.jpg
+[INFO] Process completed. Results saved to data/output
+```
+
+---
+
+#### Checking the Results
+
+After running the script, check the output folder:
+
+```bash
+# View the generated files
+ls data/output/
+
+# Expected files:
+# - page_0.jpg (processed page 1 with bounding boxes)
+# - page_1.jpg (processed page 2 with bounding boxes)
+# - coords/ (folder containing JSON files with coordinates)
+```
+
+**What you should see in the output images:**
+- Original document pages converted to images
+- Colored bounding boxes around detected Chinese characters
+- Each vertical line of text has a different color
+
+**Coordinate files (in `data/output/coords/`):**
+- `page_0.json` - Contains bounding box coordinates for page 1
+- `page_1.json` - Contains bounding box coordinates for page 2
+
+---
+
+#### Verifying Success
+
+Your branch is working correctly if:
+- ✅ The script runs without errors
+- ✅ Output images are generated in `data/output/`
+- ✅ Characters are detected and marked with colored boxes
+- ✅ JSON coordinate files are created in `data/output/coords/`
+- ✅ Red marks (if any) are removed from the document
+
+---
+
+#### Testing Different Scenarios
+
+**Test 1: Single page PDF**
+```bash
+python character_detection.py "single_page.pdf" "data/output"
+# Should generate: page_0.jpg
+```
+
+**Test 2: Multi-page PDF**
+```bash
+python character_detection.py "multi_page.pdf" "data/output"
+# Should generate: page_0.jpg, page_1.jpg, page_2.jpg, etc.
+```
+
+**Test 3: Document with red annotations**
+```bash
+python character_detection.py "annotated_doc.pdf" "data/output"
+# Red marks should be automatically removed
 ```
 
 ---
@@ -265,11 +255,12 @@ python character_detection.py "/Users/username/Documents/my_document.pdf" "data/
 
 | Issue | Solution |
 |-------|----------|
-| **"Test PDF not found"** | Run `python create_test_pdf.py` first |
-| **"Module not found"** | Make sure virtual environment is activated and dependencies installed |
+| **"ModuleNotFoundError"** | Activate virtual environment and install dependencies |
 | **"Poppler not found"** | Install poppler (see installation steps above) |
-| **"best.pt not found"** | Ensure your trained model is in `character_detection_src/best.pt` |
-| **Tests fail on Mac/Linux** | Check that `operations/character_detection.py` uses `sys.executable` for Python path |
+| **"FileNotFoundError: best.pt"** | Ensure your trained model is in `character_detection_src/best.pt` |
+| **"No such file or directory"** | Check your PDF path is correct (use absolute path) |
+| **"No characters detected"** | Lower confidence threshold in the script (default: 0.3) |
+| **Empty output folder** | Check if PDF has text content and verify model loaded correctly |
 
 ---
 
@@ -469,48 +460,6 @@ pip install ultralytics torch opencv-python pdf2image matplotlib numpy fastapi u
 
 ---
 
-## 🔄 Development Workflow
-
-### Making Changes to Character Detection
-
-1. **Make your changes** in `character_detection_src/character_detection.py`
-2. **Test your changes:**
-   ```bash
-   # Quick test with direct script
-   cd app/operations/character_detection_src
-   python character_detection.py "test_data/sample.pdf" "data/output"
-   
-   # Test through wrapper
-   cd backend
-   python test_pipeline.py
-   
-   # Run unit tests
-   pytest
-   ```
-3. **Commit and push** your changes
-4. **Create a pull request** with test results
-
-### Before Pushing Your Branch
-
-Run this checklist:
-```bash
-# 1. Verify setup
-python verify_pipeline.py
-
-# 2. Run pipeline test
-python test_pipeline.py
-
-# 3. Run unit tests
-pytest -v
-
-# 4. Check code quality (optional)
-pylint app/operations/character_detection_src/character_detection.py
-```
-
-All tests should pass before pushing! ✅
-
----
-
 ## 📬 Contact
 
 For questions or issues, contact **hardik7393@gmail.com**.
@@ -526,7 +475,7 @@ Educational project for university coursework.
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.0 | October 2025 | Initial release |
+| 1.0 | August 2025 | Initial release |
 | 1.1 | October 2025 | Added testing framework and documentation |
 
 **Last Updated:** October 2025  

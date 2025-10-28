@@ -29,7 +29,7 @@ The system performs the following steps automatically:
 ### Step 1: Clone the Repository
 ```bash
 git clone 'https://github.com/RuminantAkaMe/OCR_Chinese_Medicine_Project'
-cd OCR_Chinese_Medicine_Project-main/backend
+cd character_detection_branch
 ```
 
 ---
@@ -56,14 +56,13 @@ sudo apt-get install poppler-utils
 
 ### Step 3: Create a Virtual Environment
 ```bash
-# Create virtual environment
-python -m venv .venv310
+python -m venv venv
 
 # Activate (Mac/Linux):
-source .venv310/bin/activate
+source venv/bin/activate
 
 # Activate (Windows):
-.venv310\Scripts\activate
+venv\Scripts\activate
 ```
 
 ---
@@ -83,61 +82,53 @@ pip install fastapi uvicorn opencv-python numpy ultralytics pdf2image pillow pyt
 ## 🗂️ Project Structure
 
 ```
-OCR_Chinese_Medicine_Project-main/
-├── backend/
-│   ├── app/
-│   │   └── operations/
-│   │       ├── character_detection.py (API wrapper)
-│   │       └── character_detection_src/
-│   │           ├── character_detection.py (Main detection script)
-│   │           ├── evaluate.py
-│   │           ├── train.py
-│   │           ├── best.pt (Trained model)
-│   │           ├── data.yaml
-│   │           ├── yolov10n.pt
-│   │           ├── LabeledImage/
-│   │           │   ├── 7.jpg
-│   │           │   ├── 7.jpg.json
-│   │           │   ├── 8_org.jpeg
-│   │           │   └── 8_org.jpeg.json
-│   │           └── test_data/ (for testing)
-│   │               └── sample.pdf
-│   ├── tests/
-│   │   ├── __init__.py
-│   │   ├── test_character_detection.py
-│   │   └── test_integration.py
-│   ├── .venv310/
-│   └── requirements.txt
-└── README.md
+character_detection_branch/
+├── LabeledImage/
+│   ├── 7.jpg
+│   ├── 7.jpg.json
+│   ├── 8_org.jpeg
+│   └── 8_org.jpeg.json
+├── README.md
+├── best.pt
+├── character_detection.py
+├── data.yaml
+├── empty_placeholder_script.py
+├── evaluate.py
+├── requirements.txt
+└── train.py
 ```
 
 | File/Folder | Description |
 |--------------|-------------|
-| `character_detection.py` (wrapper) | API interface that calls the main detection script via subprocess |
-| `character_detection.py` (main) | Core detection logic (PDF/image → character bounding boxes) |
+| `character_detection.py` | Main script for detection (PDF/image input → character bounding boxes) |
 | `evaluate.py` | Evaluates model accuracy (Precision, Recall, F1, mAP, IoU) |
 | `train.py` | Script to train the YOLOv10 model on a custom dataset |
 | `best.pt` | Trained YOLOv10 model weights |
 | `data.yaml` | Configuration file defining dataset paths for training/validation |
-| `yolov10n.pt` | Base YOLOv10n model (optional or pretrained) |
-| `LabeledImage/` | Folder containing labeled data or test samples |
+| `empty_placeholder_script.py` | Placeholder script for UI integration |
+| `requirements.txt` | Python package dependencies |
+| `LabeledImage/` | Folder containing labeled test samples for evaluation |
+| `LabeledImage/7.jpg` | First test image |
+| `LabeledImage/7.jpg.json` | Ground truth annotations for first test image |
+| `LabeledImage/8_org.jpeg` | Second test image |
+| `LabeledImage/8_org.jpeg.json` | Ground truth annotations for second test image |
 
 ---
 
-## 🧪 Testing Your Branch Locally
+## 🧪 Testing Character Detection Branch Locally
 
 ### Quick Testing Guide
 
-Follow these steps to ensure your character detection branch is working correctly:
+Follow these steps to ensure the character detection branch is working correctly:
 
 #### Prerequisites for Testing
 1. Make sure you have activated your virtual environment:
    ```bash
    # Mac/Linux:
-   source .venv310/bin/activate
+   source venv/bin/activate
    
    # Windows:
-   .venv310\Scripts\activate
+   venv\Scripts\activate
    ```
 
 2. Ensure all dependencies are installed:
@@ -145,36 +136,33 @@ Follow these steps to ensure your character detection branch is working correctl
    pip install -r requirements.txt
    ```
 
-3. Verify that `best.pt` (trained model) exists in:
-   ```
-   app/operations/character_detection_src/best.pt
-   ```
+3. Verify that `best.pt` (trained model) exists in the project root directory
 
 ---
 
 #### Testing the Character Detection
 
-**Step 1: Navigate to the script directory**
+**Step 1: Navigate to the project directory**
 ```bash
-cd app/operations/character_detection_src
+cd character_detection_branch
 ```
 
 **Step 2: Prepare a test PDF**
-- Place your test PDF file in a known location, or
-- Use an existing PDF from your `test_data/` folder
+- Place your test PDF file in the project directory, or
+- Use any PDF file you want to test
 
 **Step 3: Run the detection script**
 ```bash
-python character_detection.py "path/to/your/pdf_name.pdf" "data/output"
+python character_detection.py "pdf_name.pdf" "output_folder"
 ```
 
 **Example:**
 ```bash
-# Using absolute path
-python character_detection.py "/Users/username/Documents/test_document.pdf" "data/output"
+# Using a test PDF in the current directory
+python character_detection.py "test_document.pdf" "results"
 
-# Using relative path (if PDF is in test_data folder)
-python character_detection.py "test_data/sample.pdf" "data/output"
+# Using absolute path
+python character_detection.py "/Users/username/Documents/sample.pdf" "results"
 ```
 
 ---
@@ -188,7 +176,7 @@ When the script runs successfully, you should see:
 [INFO] Running character detection...
 [INFO] Saved detection result for page_0.jpg
 [INFO] Saved detection result for page_1.jpg
-[INFO] Process completed. Results saved to data/output
+[INFO] Process completed. Results saved to results
 ```
 
 ---
@@ -199,7 +187,7 @@ After running the script, check the output folder:
 
 ```bash
 # View the generated files
-ls data/output/
+ls results/
 
 # Expected files:
 # - page_0.jpg (processed page 1 with bounding boxes)
@@ -212,7 +200,7 @@ ls data/output/
 - Colored bounding boxes around detected Chinese characters
 - Each vertical line of text has a different color
 
-**Coordinate files (in `data/output/coords/`):**
+**Coordinate files (in `results/coords/`):**
 - `page_0.json` - Contains bounding box coordinates for page 1
 - `page_1.json` - Contains bounding box coordinates for page 2
 
@@ -220,11 +208,11 @@ ls data/output/
 
 #### Verifying Success
 
-Your branch is working correctly if:
+Check if my branch is working correctly if:
 - ✅ The script runs without errors
-- ✅ Output images are generated in `data/output/`
+- ✅ Output images are generated in the specified output folder
 - ✅ Characters are detected and marked with colored boxes
-- ✅ JSON coordinate files are created in `data/output/coords/`
+- ✅ JSON coordinate files are created in the `coords/` subfolder
 - ✅ Red marks (if any) are removed from the document
 
 ---
@@ -233,19 +221,19 @@ Your branch is working correctly if:
 
 **Test 1: Single page PDF**
 ```bash
-python character_detection.py "single_page.pdf" "data/output"
+python character_detection.py "single_page.pdf" "results"
 # Should generate: page_0.jpg
 ```
 
 **Test 2: Multi-page PDF**
 ```bash
-python character_detection.py "multi_page.pdf" "data/output"
+python character_detection.py "multi_page.pdf" "results"
 # Should generate: page_0.jpg, page_1.jpg, page_2.jpg, etc.
 ```
 
 **Test 3: Document with red annotations**
 ```bash
-python character_detection.py "annotated_doc.pdf" "data/output"
+python character_detection.py "annotated_doc.pdf" "results"
 # Red marks should be automatically removed
 ```
 
@@ -257,19 +245,18 @@ python character_detection.py "annotated_doc.pdf" "data/output"
 |-------|----------|
 | **"ModuleNotFoundError"** | Activate virtual environment and install dependencies |
 | **"Poppler not found"** | Install poppler (see installation steps above) |
-| **"FileNotFoundError: best.pt"** | Ensure your trained model is in `character_detection_src/best.pt` |
+| **"FileNotFoundError: best.pt"** | Ensure your trained model `best.pt` is in the project root |
 | **"No such file or directory"** | Check your PDF path is correct (use absolute path) |
 | **"No characters detected"** | Lower confidence threshold in the script (default: 0.3) |
 | **Empty output folder** | Check if PDF has text content and verify model loaded correctly |
 
 ---
 
-## 🚀 Usage in Production
+## 🚀 Usage
 
-### 1. Run Character Detection (Direct Script)
+### 1. Run Character Detection
 ```bash
-cd app/operations/character_detection_src
-python character_detection.py "input.pdf" "data/output"
+python character_detection.py "input.pdf" "output_folder"
 ```
 
 **What it does:**
@@ -278,22 +265,15 @@ python character_detection.py "input.pdf" "data/output"
 - Detects and groups Chinese characters
 - Saves results with colored bounding boxes
 
----
-
-### 2. Run via API Wrapper
-```python
-from app.operations import character_detection
-
-pdf_path = "path/to/your/document.pdf"
-result_path = character_detection.run(pdf_path)
-print(f"Result saved at: {result_path}")
+**Example:**
+```bash
+python character_detection.py "document.pdf" "results"
 ```
 
 ---
 
-### 3. Evaluate Model Performance
+### 2. Evaluate Model Performance
 ```bash
-cd app/operations/character_detection_src
 python evaluate.py
 ```
 
@@ -302,15 +282,15 @@ python evaluate.py
 - Mean IoU for predicted boxes  
 - Precision-Recall curves and metric plots  
 
+> Uses labeled images from `LabeledImage/` folder for evaluation.
 > Results and visualizations are automatically saved in the output directory.
 
 ---
 
-### 4. Train Model on Custom Dataset
+### 3. Train Model on Custom Dataset
 If you want to train the YOLOv10 model on your own dataset:
 
 ```bash
-cd app/operations/character_detection_src
 python train.py
 ```
 
@@ -384,7 +364,7 @@ analyze_thresholds = True
 
 | Property | Details |
 |-----------|----------|
-| Model | YOLOv10n (nano) |
+| Model | YOLOv10n|
 | Task | Chinese character detection |
 | Input Size | 640×640 |
 | Model File | `best.pt` |
@@ -406,11 +386,11 @@ analyze_thresholds = True
 | Issue | Solution |
 |--------|-----------|
 | **Poppler not found** | Install and add to PATH (`pdftoppm -h` should work) |
-| **Model not found** | Check if `best.pt` is present in `character_detection_src/` folder |
+| **Model not found** | Check if `best.pt` is present in project root folder |
 | **CUDA errors** | Ensure GPU is available or run on CPU |
 | **Low accuracy** | Lower confidence threshold or retrain model |
-| **Subprocess errors** | Ensure `operations/character_detection.py` uses `sys.executable` |
-| **Import errors** | Activate virtual environment: `source .venv310/bin/activate` |
+| **Import errors** | Activate virtual environment: `source venv/bin/activate` |
+| **PDF conversion fails** | Verify Poppler is installed correctly |
 
 ---
 
@@ -423,15 +403,6 @@ Core dependencies:
 - `pdf2image`
 - `matplotlib`
 - `numpy`
-- `fastapi`
-- `uvicorn`
-- `pillow`
-
-Testing dependencies:
-- `pytest`
-- `pytest-cov`
-- `pytest-mock`
-- `reportlab`
 
 Install all via:
 ```bash
@@ -440,7 +411,7 @@ pip install -r requirements.txt
 
 Or manually:
 ```bash
-pip install ultralytics torch opencv-python pdf2image matplotlib numpy fastapi uvicorn pillow pytest pytest-cov reportlab
+pip install ultralytics torch opencv-python pdf2image matplotlib numpy
 ```
 
 ---
@@ -451,12 +422,10 @@ pip install ultralytics torch opencv-python pdf2image matplotlib numpy fastapi u
 - Red mark removal (HSV + inpainting)  
 - Vertical text line grouping  
 - Color-coded bounding boxes  
-- Comprehensive test suite  
-- Evaluation with multiple metrics  
+- Evaluation with multiple metrics (using labeled test data)
 - Custom model training support via `train.py`  
 - Lightweight YOLOv10n model  
-- API wrapper for easy integration
-- Cross-platform support (Windows, Mac, Linux)
+- JSON output with character coordinates
 
 ---
 

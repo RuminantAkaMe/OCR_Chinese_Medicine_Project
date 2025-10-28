@@ -11,7 +11,7 @@ The system performs the following steps automatically:
 
 ---
 
-## 🧑‍💻 Team Member
+## 🧑‍💻 Module Name
 **Character Detection Module**
 
 ---
